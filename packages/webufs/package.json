@@ -6,6 +6,7 @@
   "author": "parabola2004",
   "license": "MIT",
   "main": "build/index.js",
+  "types": "build/index.d.ts",
   "scripts": {
     "build": "tsc --build"
   }

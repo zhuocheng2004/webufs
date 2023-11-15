@@ -2,7 +2,8 @@
   "name": "@webufs/webufs-idb",
   "version": "0.0.1",
   "description": "IndexedDB implementation of webufs API",
-  "main": "index.js",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
   "author": "parabola2004",
   "license": "MIT",
   "dependencies": {
