@@ -1,0 +1,13 @@
+{
+  "name": "@webufs/webufs",
+  "version": "0.0.1",
+  "description": "webufs core",
+  "devDependencies": {},
+  "author": "parabola2004",
+  "license": "MIT",
+  "main": "build/index.js",
+  "scripts": {
+    "build": "tsc --build"
+  }
+}
+
