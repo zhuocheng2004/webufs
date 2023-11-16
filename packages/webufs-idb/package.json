@@ -1,9 +1,17 @@
 {
   "name": "@webufs/webufs-idb",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "IndexedDB implementation of webufs API",
-  "author": "parabola2004 <zhuocheng2004@gmail.com>",
+  "keywords": [
+    "indexeddb", "idb", "idbfs", "filesystem", "fs", "web"
+  ],
+  "author": "parabola2004 <zhuocheng2004@gmail.com> (http://parabola2004.eastasia.cloudapp.azure.com/)",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zhuocheng2004/webufs.git",
+    "directory": "packages/webufs-idb"
+  },
   "type": "module",
   "main": "build/index.js",
   "types": "build/index.d.ts",

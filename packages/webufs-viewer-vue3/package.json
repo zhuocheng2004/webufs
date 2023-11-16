@@ -1,9 +1,17 @@
 {
   "name": "@webufs/webufs-viewer-vue3",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "A Vue3 Component for viewing webufs file system",
-  "author": "parabola2004 <zhuocheng2004@gmail.com>",
+  "keywords": [
+    "vue", "vue3", "viewer", "filesystem", "fs", "web"
+  ],
+  "author": "parabola2004 <zhuocheng2004@gmail.com> (http://parabola2004.eastasia.cloudapp.azure.com/)",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zhuocheng2004/webufs.git",
+    "directory": "packages/webufs-viewer-vue3"
+  },
   "type": "module",
   "main": "build/webufs-viewer.js",
   "module": "build/webufs-viewer.esm.js",

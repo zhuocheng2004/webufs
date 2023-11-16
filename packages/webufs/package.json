@@ -1,10 +1,17 @@
 {
   "name": "@webufs/webufs",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "webufs core",
-  "devDependencies": {},
-  "author": "parabola2004 <zhuocheng2004@gmail.com>",
+  "keywords": [
+    "filesystem", "fs", "web"
+  ],
+  "author": "parabola2004 <zhuocheng2004@gmail.com> (http://parabola2004.eastasia.cloudapp.azure.com/)",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zhuocheng2004/webufs.git",
+    "directory": "packages/webufs"
+  },
   "type": "module",
   "main": "build/index.js",
   "types": "build/index.d.ts",
