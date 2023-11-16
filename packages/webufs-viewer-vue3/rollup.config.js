@@ -1,18 +1,26 @@
 
-import PeerDepsExternalPlugin from 'rollup-plugin-peer-deps-external'
 import vue from 'rollup-plugin-vue'
+import typescript from 'rollup-plugin-typescript2'
 
 export default {
     input: 'src/index.ts',
     output: [
         {
-            format: 'cjs',
+            format: 'esm',
             dir: 'build',
             sourcemap: true
         },
     ],
+    external: [ 'vue' ],
     plugins: [
-        PeerDepsExternalPlugin(),
-        vue()
-    ]
+        vue(),
+        typescript({
+            tsconfigOverride: {
+                compilerOptions: {
+                    declaration: true,
+                },
+                include: null,
+            }
+        })
+    ],
 }
