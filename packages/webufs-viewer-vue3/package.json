@@ -1,12 +1,12 @@
 {
-  "name": "@webufs/webufs-idb",
-  "version": "0.0.2",
-  "description": "IndexedDB implementation of webufs API",
+  "name": "@webufs/webufs-viewer-vue3",
+  "version": "0.0.1",
+  "description": "A Vue3 Component for viewing webufs file system",
   "author": "parabola2004 <zhuocheng2004@gmail.com>",
   "license": "MIT",
   "type": "module",
-  "main": "build/index.js",
-  "types": "build/index.d.ts",
+  "main": "build/webufs-viewer.js",
+  "module": "build/webufs-viewer.esm.js",
   "files": [
     "./build/*.js",
     "./build/*.map",
@@ -17,5 +17,8 @@
   },
   "dependencies": {
     "@webufs/webufs": "^0.0.2"
+  },
+  "peerDependencies": {
+    "vue": "^3.3.8"
   }
 }

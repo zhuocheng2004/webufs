@@ -1,14 +1,20 @@
 {
   "name": "@webufs/webufs",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "webufs core",
   "devDependencies": {},
-  "author": "parabola2004",
+  "author": "parabola2004 <zhuocheng2004@gmail.com>",
   "license": "MIT",
+  "type": "module",
   "main": "build/index.js",
   "types": "build/index.d.ts",
+  "files": [
+    "./build/*.js",
+    "./build/*.map",
+    "./build/*.d.ts"
+  ],
   "scripts": {
-    "build": "tsc --build"
+    "build": "rollup -c"
   }
 }
 

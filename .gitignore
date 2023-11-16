@@ -10,5 +10,6 @@ package-lock.json
 dist
 
 *.tsbuildinfo
+.rollup*
 
 packages/*/build

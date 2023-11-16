@@ -5,11 +5,16 @@
         "moduleResolution": "Node",
         "declaration": true,
         "strict": true,
+        "incremental": true,
         "esModuleInterop": true,
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
         "rootDir": "./src",
         "outDir": "./build",
         "composite": true
-    }
+    },
+    "include": [
+        "src/**/*.ts", 
+        "src/**/*.vue"
+    ]
 }

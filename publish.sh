@@ -1,1 +1,1 @@
-npm publish --workspace packages --access public
+npm publish --workspace packages --access public $@

@@ -1,9 +1,0 @@
-._*
-.git
-.npmrc
-npm-debug.log
-
-build/*
-
-package-lock.json
-*.tsbuildinfo
