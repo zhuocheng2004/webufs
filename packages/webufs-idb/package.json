@@ -1,6 +1,6 @@
 {
   "name": "@webufs/webufs-idb",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "IndexedDB implementation of webufs API",
   "author": "parabola2004 <zhuocheng2004@gmail.com>",
   "license": "MIT",
