@@ -1,10 +1,17 @@
 
+/**
+ * A dentry holds the name of a file/dir.
+ */
 abstract class Dentry {
     /**
      * name of a single dir/file
      */
     name: string
 
+    /**
+     * parent directory
+     */
+    parent: Dentry = this
     /**
      * sub-directories
      */
@@ -15,10 +22,46 @@ abstract class Dentry {
     }
 }
 
+/**
+ * An inode is a holder of a real file/directory.
+ * Inode could be attached to a dentry, but 
+ * it can also be used on its own.
+ */
 abstract class Inode {
+    /**
+     * inode operations
+     */
+    abstract inode_op: InodeOperations
+
+    /**
+     * file operations
+     */
+    abstract file_op: FileOperations
 }
 
 abstract class VFile {
+}
+
+interface FileOperations {
+    llseek: () => Promise<void>
+    read: () => Promise<void>
+    write: () => Promise<void>
+    open: () => Promise<void>
+    flush: () => Promise<void>
+    release: () => Promise<void>
+}
+
+interface InodeOperations {
+    lookup: () => Promise<void>
+    readlink: (dentry: Dentry) => Promise<string>
+    create: (inode: Inode, dentry: Dentry) => Promise<void>
+    link: (dentry: Dentry, inode: Inode) => Promise<void>
+    unlink: (inode: Inode, dentry: Dentry) => Promise<void>
+    symlink: (inode: Inode, dentry: Dentry, sym: string) => Promise<void>
+    mkdir: (inode: Inode, dentry: Dentry) => Promise<void>
+    rmdir: (inode: Inode, dentry: Dentry) => Promise<void>
+    mknod: (inode: Inode, dentry: Dentry) => Promise<void>
+    rename: () => Promise<void>
 }
 
 /**
@@ -44,7 +87,7 @@ abstract class FileSystemType {
      * This defines how to mount an fs on a dentry.
      * @param dentry the dentry to mount on
      */
-    abstract mount(dentry: Dentry): void
+    abstract mount(dentry: Dentry): Promise<void>
 }
 
 class VFS {

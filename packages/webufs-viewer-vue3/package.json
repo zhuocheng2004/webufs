@@ -1,6 +1,6 @@
 {
   "name": "@webufs/webufs-viewer-vue3",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "A Vue3 Component for viewing webufs file system",
   "keywords": [
     "vue", "vue3", "viewer", "filesystem", "fs", "web"
