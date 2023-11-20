@@ -1,5 +1,5 @@
 
-import { nodeResolve } from '@rollup/plugin-node-resolve';
+import { nodeResolve } from '@rollup/plugin-node-resolve'
 import esbuild from 'rollup-plugin-esbuild'
 import dts from 'rollup-plugin-dts'
 
@@ -11,7 +11,6 @@ export default [
             {
                 format: 'es',
                 dir: 'build',
-                sourcemap: true
             },
         ]
     },
@@ -22,7 +21,6 @@ export default [
             {
                 format: 'es',
                 dir: 'build',
-                sourcemap: true
             }
         ]
     }

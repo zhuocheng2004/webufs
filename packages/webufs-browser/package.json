@@ -1,25 +1,20 @@
 {
-  "name": "@webufs/webufs-viewer-vue3",
-  "version": "0.0.5",
-  "description": "A Vue3 Component for viewing webufs file system",
+  "name": "@webufs/webufs-browser",
+  "version": "0.0.1",
+  "description": "webufs browser-side build variant",
   "keywords": [
-    "vue",
-    "vue3",
-    "viewer",
-    "filesystem",
-    "fs",
-    "web"
+    "browser", "filesystem", "fs", "web"
   ],
   "author": "parabola2004 <zhuocheng2004@gmail.com> (http://parabola2004.eastasia.cloudapp.azure.com/)",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/zhuocheng2004/webufs.git",
-    "directory": "packages/webufs-viewer-vue3"
+    "directory": "packages/webufs-browser"
   },
   "type": "module",
-  "main": "build/webufs-viewer.js",
-  "module": "build/webufs-viewer.esm.js",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
   "files": [
     "./build/*.js",
     "./build/*.map",
@@ -29,9 +24,8 @@
     "build": "rollup -c"
   },
   "dependencies": {
-    "@webufs/webufs": "^0.0.2"
-  },
-  "peerDependencies": {
-    "vue": "^3.3.8"
+    "@webufs/webufs": "^0.0.6",
+    "@webufs/webufs-idbfs": "^0.0.6"
   }
 }
+

@@ -10,7 +10,6 @@ export default [
             {
                 format: 'es',
                 dir: 'build',
-                sourcemap: true
             },
         ]
     },
@@ -21,7 +20,6 @@ export default [
             {
                 format: 'es',
                 dir: 'build',
-                sourcemap: true
             }
         ]
     }

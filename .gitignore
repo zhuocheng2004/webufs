@@ -13,3 +13,5 @@ dist
 .rollup*
 
 packages/*/build
+
+local-install.sh

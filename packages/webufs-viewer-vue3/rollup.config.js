@@ -8,7 +8,6 @@ export default {
         {
             format: 'esm',
             dir: 'build',
-            sourcemap: true
         },
     ],
     external: [ 'vue' ],
