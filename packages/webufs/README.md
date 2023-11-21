@@ -2,6 +2,21 @@
 
 I just started to write this library. Please wait and see.
 
+### Usage
+```ts
+import { createDefaultContext } from "@webufs/webufs"
+
+// Yes, it's async
+let ctx = await createDefaultContext()
+
+ctx.mkdir('a')
+ctx.chdir('/a')
+console.log(ctx.getcwd())
+ctx.chdir('..')
+ctx.rmdir('./a/')
+// ...
+```
+
 ### Hope
 
 In the future, I hope we could write this kind of code:

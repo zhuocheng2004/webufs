@@ -1,23 +1,20 @@
 
-import { Dentry, FileSystemType, Mount } from "./fs"
+import { Dentry, FileSystemType, InodeType, Mount } from "./fs"
 
-
-enum LookupType {
+/**
+ * used in path_lookup
+ */
+export enum LookupType {
+    /** require destination file exists */
     NORMAL,
+    /** doesn't require the destination file exists (but require intermediate dirs), used when creating files */
     EXCEPT_LAST,
 }
 
-class LookupInfo {
-    dentry: Dentry
-    mount: Mount
-
-    constructor(dentry: Dentry, mount: Mount) {
-        this.dentry = dentry
-        this.mount = mount
-    }
-}
-
-class VFS {
+/**
+ * a VFS instance which has a registry of file system types
+ */
+export class VFS {
     protected fileSystems: FileSystemType[] = []
 
     registerFSType(fsType: FileSystemType) {
@@ -38,15 +35,31 @@ class VFS {
         throw Error(`file system type ${name} not found`)
     }
 
-    async pathLookup(path: string, start: LookupInfo, lookupType: LookupType): Promise<LookupInfo> {
+    /**
+     * Lookup a dir/file given a path string
+     * @param path the path to look up
+     * @param start the dir to start look up
+     * @param root the relative root dir. We should never go to the parent of this dir.
+     * @param lookupType the type for lookup
+     * @returns the found dentry
+     */
+    async pathLookup(path: string, start: Dentry, root: Dentry, lookupType: LookupType): Promise<Dentry> {
         let components = path.split('/')
         components = components.filter(s => s.length > 0)
 
-        let curDir = start.dentry
-        let curMnt = start.mount
+        let curDir = start
         for (let i = 0; i < components.length; i++) {
             let component = components[i]
             let found: Dentry | null = null
+
+            // deal with special cases: '.' and '..'
+            if (component === '.') {
+                continue
+            } else if (component === '..') {
+                if (curDir !== root) curDir = curDir.parent
+                continue
+            }
+ 
             for (let subdir of curDir.children) {
                 if (subdir.name === component) {
                     found = subdir
@@ -55,21 +68,26 @@ class VFS {
             }
             if (!found) {
                 if (lookupType === LookupType.EXCEPT_LAST && i === components.length-1) {
-                    let dentry = new Dentry(component)
+                    // create a new dentry
+                    let dentry = new Dentry(component, curDir.mount)
                     dentry.parent = curDir
-                    return new LookupInfo(dentry, curMnt)
+                    return dentry
                 }
-                throw new Error('path lookup: cannot find')
+                throw Error('path lookup: file doesn\'t exist')
             } else {
+                if (!found.inode) {
+                    throw Error('negative inode')
+                }
+                if (i !== components.length-1) {
+                    // non-last component needs to be a dir
+                    if (found.inode.type !== InodeType.DIR) {
+                        throw Error('not a directory')
+                    }
+                }
                 curDir = found
             }
         }
 
-        return new LookupInfo(curDir, curMnt)
+        return curDir
     }
-}
-
-export {
-    LookupType, LookupInfo,
-    VFS
 }

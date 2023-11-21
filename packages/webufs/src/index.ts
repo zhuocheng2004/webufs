@@ -16,18 +16,23 @@ import { InMemoryFSType, InMemoryFS } from './memory'
 let defaultVFS = new VFS()
 defaultVFS.registerFSType(InMemoryFS)
 
-let defaultContext = new Promise(async (resolve, reject) => {
+
+/**
+ * Create a default VFS accessing context
+ * It has 'memfs' mounted at root as default
+ */
+async function createDefaultContext(): Promise<Context> {
     let ctx = new Context(defaultVFS)
     await ctx.mountInit('memfs')
-    resolve(ctx)
-})
+    return ctx
+}
 
 export {
     Dentry,
     FileSystemType,
     LookupType,
     VFS, defaultVFS, 
-    Context, defaultContext,
+    Context, createDefaultContext,
     // default FS implementations
     InMemoryFSType, InMemoryFS
 }

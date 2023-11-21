@@ -2,14 +2,14 @@
 import {
     FileSystemType, 
     VFS, defaultVFS, 
-    Context, defaultContext,
+    Context, createDefaultContext,
     InMemoryFSType, InMemoryFS 
 } from "@webufs/webufs"
 
 const webufs = {
     FileSystemType,
     VFS, defaultVFS,
-    Context, defaultContext,
+    Context, createDefaultContext,
     InMemoryFSType, InMemoryFS
 }
 

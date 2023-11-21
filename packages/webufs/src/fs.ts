@@ -2,7 +2,7 @@
 /**
  * A dentry holds the name of a file/dir.
  */
-class Dentry {
+export class Dentry {
     /**
      * name of a single dir/file
      */
@@ -22,15 +22,50 @@ class Dentry {
      */
     inode: Inode | null = null
 
-    constructor(name: string) {
+    /**
+     * Associated mount instance, if present
+     */
+    mount: Mount | null = null
+
+    constructor(name: string, mount: Mount | null) {
         this.name = name
+        this.mount = mount
     }
 
+    /**
+     * create a raw root dentry
+     * @returns created dentry
+     */
     static getRoot(): Dentry {
-        let dentry = new Dentry('/')
+        let dentry = new Dentry('/', null)
         dentry.parent = dentry
         return dentry
     }
+
+    /**
+     * add a subdir
+     * @param child dentry to add as a child
+     */
+    add(child: Dentry) {
+        this.children.push(child)
+    }
+
+    /**
+     * remove a subdir
+     * @param child dentry to remove
+     */
+    remove(child: Dentry) {
+        this.children = this.children.filter(d => d !== child)
+    }
+}
+
+/**
+ * The type of an inode
+ */
+export enum InodeType {
+    REG,    // regular
+    DIR,    // directory
+    SYMLINK // symbolic link
 }
 
 /**
@@ -38,7 +73,9 @@ class Dentry {
  * Inode could be attached to a dentry, but 
  * it can also be used on its own.
  */
-class Inode {
+export class Inode {
+    type: InodeType
+
     /**
      * inode operations
      */
@@ -47,9 +84,10 @@ class Inode {
     /**
      * file operations
      */
-    file_op: FileOperations
+    file_op: FileOperations | null
 
-    constructor(inode_op: InodeOperations, file_op: FileOperations) {
+    constructor(type: InodeType, inode_op: InodeOperations, file_op: FileOperations | null) {
+        this.type = type
         this.inode_op = inode_op
         this.file_op = file_op
     }
@@ -58,7 +96,10 @@ class Inode {
 abstract class VFile {
 }
 
-interface FileOperations {
+/**
+ * Operations on VFile object
+ */
+export interface FileOperations {
     llseek: (file: VFile, offset: number, rel: number) => Promise<void>
     read: (file: VFile, buffer: ArrayBuffer, offset: number) => Promise<void>
     write: (file: VFile, buffer: ArrayBuffer, offset: number) => Promise<void>
@@ -67,7 +108,10 @@ interface FileOperations {
     release: () => Promise<void>
 }
 
-interface InodeOperations {
+/**
+ * Operations on an inode
+ */
+export interface InodeOperations {
     /**
      * Called when creating regular files.
      * @param inode the inode to be associated to the dentry
@@ -76,8 +120,6 @@ interface InodeOperations {
      * @returns
      */
     create: (inode: Inode, dentry: Dentry) => Promise<void>
-
-    lookup: () => Promise<void>
 
     /**
      * Called when creating hard links.
@@ -99,10 +141,10 @@ interface InodeOperations {
      * Called when creating symbolic links.
      * @param dir: base dir
      * @param dentry the dentry to be pointed to
-     * @param symName the symlink file name
+     * @param sym the symlink content
      * @returns 
      */
-    symlink: (dir: Dentry, dentry: Dentry, symName: string) => Promise<void>
+    symlink: (dir: Dentry, dentry: Dentry, sym: string) => Promise<void>
 
     /**
      * Called when creating a new directory.
@@ -113,11 +155,10 @@ interface InodeOperations {
 
     /**
      * Called when removing a dir.
-     * @param dir base dir
      * @param dentry dir to delete
      * @returns void
      */
-    rmdir: (dir: Inode, dentry: Dentry) => Promise<void>
+    rmdir: (dentry: Dentry) => Promise<void>
 
     /**
      * Called when creating a device/pipe/socket object.
@@ -144,18 +185,30 @@ interface InodeOperations {
      * @param inode the inode for the symlink
      * @returns the destination
      */
-    get_link: (dir: Dentry, inode: Inode) => Promise<string>
+    getLink: (dir: Dentry, inode: Inode) => Promise<string>
 }
 
+export interface SuperOperations {
+    mkInode: (type: InodeType) => Promise<Inode>
+}
 
 /**
  * Stands for a mount instance
  */
-class Mount {
+export class Mount {
+    /**
+     * mount point
+     */
     mntPoint: Dentry
 
-    constructor(mntPoint: Dentry) {
+    /**
+     * global operating methods for a type of fs
+     */
+    op: SuperOperations
+
+    constructor(mntPoint: Dentry, op: SuperOperations) {
         this.mntPoint = mntPoint
+        this.op = op
     }
 }
 
@@ -169,7 +222,7 @@ class Mount {
  * multiple times with different args referring to 
  * different background databases. 
  */
-abstract class FileSystemType {
+export abstract class FileSystemType {
     /**
      * the unique identifier for an fs type
      */
@@ -184,10 +237,4 @@ abstract class FileSystemType {
      * @param dentry the dentry to mount on
      */
     abstract mount(dentry: Dentry): Promise<Mount>
-}
-
-export {
-    Dentry, Inode,
-    Mount,
-    FileSystemType
 }
