@@ -1,6 +1,39 @@
 
-import { Dentry, InodeType } from "./fs"
+import { Dentry, FileOperations, Inode, InodeType, VFile } from "./fs"
 import { LookupType, VFS } from "./VFS"
+
+export type OpenFlag = {
+    /**
+     * Create regular file if not exist.
+     */
+    create ?: boolean
+
+    /**
+     * Used together with CREATE. Throw error when file exists
+     */
+    excl ?: boolean
+}
+
+export class FileDescriptor {
+    file: VFile
+    op: FileOperations
+
+    constructor(file: VFile) {
+        this.file = file
+        if (!file.inode.file_op) {
+            throw Error('cannot create FileDescriptor: file operations unavailable')
+        }
+        this.op = file.inode.file_op
+    }
+
+    async read(dst: ArrayBuffer, offset: number) {
+        await this.op.read(this.file, dst, offset, dst.byteLength)
+    }
+
+    async write(src: ArrayBuffer, offset: number) {
+        await this.op.write(this.file, src, offset, src.byteLength)
+    }
+}
 
 /**
  * The context to use VFS.
@@ -81,7 +114,7 @@ export class Context {
         let dentry = await this.lookup(path, LookupType.NORMAL)
         // the dentry must be an empty dir
         if (!dentry.inode || dentry.inode.type !== InodeType.DIR) throw Error('not a directory')
-        if (dentry.children.length > 0) throw Error('directory not empty')
+        if (!dentry.isEmpty()) throw Error('directory not empty')
         await fsType.mount(dentry)
     }
 
@@ -115,7 +148,7 @@ export class Context {
 
             dentry.parent.children.push(dentry)
         } catch (error) {
-            throw Error(`Cannot mkdir ${path}: ${error}`)
+            throw Error(`cannot mkdir ${path}: ${error}`)
         }
     }
 
@@ -133,7 +166,41 @@ export class Context {
                 dentry.parent.remove(dentry)
             }
         } catch (error) {
-            throw Error(`Cannot rmdir ${path}: ${error}`)
+            throw Error(`cannot rmdir ${path}: ${error}`)
+        }
+    }
+
+    async open(path: string, flags: OpenFlag): Promise<FileDescriptor> {
+        try {
+            let dentry = await this.lookup(path, LookupType.EXCEPT_LAST)
+            if (!dentry.mount) {
+                throw Error('negative dentry')
+            }
+
+            let inode: Inode
+            if (dentry.inode) {     // positive dentry: file exist
+                if (flags.create && flags.excl) {
+                    throw Error('file exists')
+                }
+                inode = dentry.inode
+            } else {                // negative dentry: file doesn't exist
+                if (!flags.create) {
+                    throw Error('file does not exist')
+                }
+                inode = await dentry.mount.op.mkInode(InodeType.REG)
+                await inode.inode_op.create(inode, dentry)
+            }
+
+            if (!inode.file_op) {
+                throw Error('file operations not available')
+            }
+
+            let file = new VFile(inode)
+            await inode.file_op.open(file)
+
+            return new FileDescriptor(file)
+        } catch (error) {
+            throw Error(`cannot open ${path}: ${error}`)
         }
     }
 }

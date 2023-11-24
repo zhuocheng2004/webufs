@@ -59,13 +59,13 @@ export class VFS {
                 if (curDir !== root) curDir = curDir.parent
                 continue
             }
- 
-            for (let subdir of curDir.children) {
-                if (subdir.name === component) {
-                    found = subdir
-                    break
-                }
+
+            if (!curDir.inode) {
+                throw Error('negative dentry')
             }
+ 
+            found = await curDir.inode.inode_op.lookup(curDir, component)
+            
             if (!found) {
                 if (lookupType === LookupType.EXCEPT_LAST && i === components.length-1) {
                     // create a new dentry

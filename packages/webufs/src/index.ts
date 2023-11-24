@@ -1,7 +1,7 @@
 
 import { Dentry, FileSystemType } from './fs'
 import { VFS, LookupType } from './VFS'
-import { Context } from './Context'
+import { Context, FileDescriptor } from './Context'
 import { InMemoryFSType, InMemoryFS } from './memory'
 
 /**
@@ -32,7 +32,7 @@ export {
     FileSystemType,
     LookupType,
     VFS, defaultVFS, 
-    Context, createDefaultContext,
+    Context, createDefaultContext, FileDescriptor,
     // default FS implementations
     InMemoryFSType, InMemoryFS
 }

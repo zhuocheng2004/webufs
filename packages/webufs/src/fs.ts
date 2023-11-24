@@ -20,16 +20,23 @@ export class Dentry {
     /**
      * Associated inode, if present
      */
-    inode: Inode | null = null
+    inode?: Inode
 
     /**
      * Associated mount instance, if present
      */
-    mount: Mount | null = null
+    mount?: Mount
 
-    constructor(name: string, mount: Mount | null) {
+    constructor(name: string, mount?: Mount) {
         this.name = name
         this.mount = mount
+    }
+
+    /**
+     * Whether the dentry has no children
+     */
+    isEmpty(): boolean {
+        return this.children.length == 0
     }
 
     /**
@@ -37,7 +44,7 @@ export class Dentry {
      * @returns created dentry
      */
     static getRoot(): Dentry {
-        let dentry = new Dentry('/', null)
+        let dentry = new Dentry('/', undefined)
         dentry.parent = dentry
         return dentry
     }
@@ -84,16 +91,21 @@ export class Inode {
     /**
      * file operations
      */
-    file_op: FileOperations | null
+    file_op?: FileOperations
 
-    constructor(type: InodeType, inode_op: InodeOperations, file_op: FileOperations | null) {
+    constructor(type: InodeType, inode_op: InodeOperations, file_op?: FileOperations) {
         this.type = type
         this.inode_op = inode_op
         this.file_op = file_op
     }
 }
 
-abstract class VFile {
+export class VFile {
+    inode: Inode
+
+    constructor(inode: Inode) {
+        this.inode = inode
+    }
 }
 
 /**
@@ -101,9 +113,9 @@ abstract class VFile {
  */
 export interface FileOperations {
     llseek: (file: VFile, offset: number, rel: number) => Promise<void>
-    read: (file: VFile, buffer: ArrayBuffer, offset: number) => Promise<void>
-    write: (file: VFile, buffer: ArrayBuffer, offset: number) => Promise<void>
-    open: (inode: Inode, file: VFile) => Promise<void>
+    read: (file: VFile, dst: ArrayBuffer, offset: number, size: number) => Promise<void>
+    write: (file: VFile, src: ArrayBuffer, offset: number, size: number) => Promise<void>
+    open: (file: VFile) => Promise<VFile>
     flush: () => Promise<void>
     release: () => Promise<void>
 }
@@ -112,6 +124,17 @@ export interface FileOperations {
  * Operations on an inode
  */
 export interface InodeOperations {
+    /**
+     * Called when looking up a dentry
+     * 
+     * Not in-memory fs should instantiate dentries/inodes when looking up.
+     * 
+     * @param base base dentry
+     * @param childName child dentry name
+     * @returns child dentry if it exists; null if does't exist
+     */
+    lookup: (base: Dentry, childName: string) => Promise<Dentry|null>
+
     /**
      * Called when creating regular files.
      * @param inode the inode to be associated to the dentry

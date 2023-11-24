@@ -9,8 +9,18 @@ import { Dentry, Inode, InodeType } from "./fs"
  * The 'simple*' methods operates on in-memory level.
  */
 
+export async function simpleLookup(base: Dentry, childName: string): Promise<Dentry|null> {
+    for (let subdir of base.children) {
+        if (subdir.name === childName) {
+            return subdir
+        }
+    }
+    return null
+}
+
 export async function simpleCreaate(inode: Inode, dentry: Dentry) {
     dentry.inode = inode
+    dentry.parent.add(dentry)
 }
 
 export async function simpleRmdir(dentry: Dentry) {

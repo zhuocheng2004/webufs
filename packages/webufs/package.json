@@ -1,6 +1,6 @@
 {
   "name": "@webufs/webufs",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "webufs core",
   "keywords": [
     "filesystem", "fs", "web"
