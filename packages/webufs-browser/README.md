@@ -1,22 +1,19 @@
-## Webufs browser-side usable js library.
+# Webufs browser-side usable js library.
 
-This package builds the webufs as an `iife` js library, 
+This package builds the webufs package as an `iife` js library, 
 which is usable in browser.
 
-### Usage
+## Usage
 ```html
-<script src="webufs.js"></script>
+<script src="webufs.min.js"></script>
 ```
 and then
 ```js
 
 // Yes, it's async
-let ctx = await webufs.createDefaultContext()
+const ctx = await webufs.createDefaultContext()
 
-ctx.mkdir('a')
-ctx.chdir('/a')
-console.log(ctx.getcwd())
-ctx.chdir('..')
-ctx.rmdir('./a/')
-// ...
+//... now play with 'ctx'
 ```
+
+For details on how to use it, please read the document of core package "@webufs/webufs"

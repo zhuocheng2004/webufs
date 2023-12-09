@@ -1,5 +1,5 @@
 
-import { Dentry, FileOperations, Inode, InodeType, VFile } from "./fs"
+import { Dentry, FileOperations, Inode, InodeType, SeekType, VFile } from "./fs"
 import { LookupType, VFS } from "./VFS"
 
 export type OpenFlag = {
@@ -26,12 +26,43 @@ export class FileDescriptor {
         this.op = file.inode.file_op
     }
 
-    async read(dst: ArrayBuffer, offset: number) {
-        await this.op.read(this.file, dst, offset, dst.byteLength)
+    /**
+     * Close an opened file. This will flush all pending operations.
+     */
+    async close() {
+        await this.op.flush()
     }
 
-    async write(src: ArrayBuffer, offset: number) {
-        await this.op.write(this.file, src, offset, src.byteLength)
+    async seek(offset: number, rel: SeekType) {
+        await this.op.llseek(this.file, offset, rel)
+    }
+
+    /**
+     * Read some bytes from a file to a buffer
+     * @param dst buffer to write to
+     * @param size number of bytes to read (default to be the target buffer size)
+     */
+    async read(dst: ArrayBuffer, size?: number) {
+        if (!size) size = dst.byteLength
+        await this.readInternal(dst, size)
+    }
+
+    /**
+     * Write some bytes from a buffer to a file
+     * @param src buffer that provides data
+     * @param size number of bytes to write (default to be the source buffer size)
+     */
+    async write(src: ArrayBuffer, size?: number) {
+        if (!size) size = src.byteLength
+        await this.writeInternal(src, size)
+    }
+
+    private async readInternal(dst: ArrayBuffer, size: number) {
+        await this.op.read(this.file, dst, size)
+    }
+
+    private async writeInternal(src: ArrayBuffer, size: number) {
+        await this.op.write(this.file, src, size)
     }
 }
 
@@ -170,7 +201,9 @@ export class Context {
         }
     }
 
-    async open(path: string, flags: OpenFlag): Promise<FileDescriptor> {
+    async open(path: string, flags?: OpenFlag): Promise<FileDescriptor> {
+        if (!flags) flags = {}
+
         try {
             let dentry = await this.lookup(path, LookupType.EXCEPT_LAST)
             if (!dentry.mount) {
@@ -195,7 +228,7 @@ export class Context {
                 throw Error('file operations not available')
             }
 
-            let file = new VFile(inode)
+            let file = await dentry.mount.op.mkVFile(inode)
             await inode.file_op.open(file)
 
             return new FileDescriptor(file)

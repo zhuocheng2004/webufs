@@ -13,6 +13,7 @@
   ],
   "scripts": {
     "build": "npm run build --workspace packages",
+    "test": "npm run test --workspace packages",
     "publish": "./publish.sh",
     "test-publish": "./publish.sh --dry-run"
   },
@@ -23,6 +24,7 @@
     "@typescript-eslint/eslint-plugin": "^6.11.0",
     "@typescript-eslint/parser": "^6.11.0",
     "eslint": "^8.53.0",
+    "jest": "^29.7.0",
     "prettier": "^3.1.0",
     "rollup": "^4.4.1",
     "rollup-plugin-dts": "^6.1.0",

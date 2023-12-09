@@ -6,8 +6,8 @@
  * also a toy example
  */
 
-import { Dentry, FileOperations, FileSystemType, Inode, InodeOperations, InodeType, Mount, SuperOperations, VFile } from "./fs"
-import { simpleCreaate, simpleLookup, simpleRmdir } from "./common"
+import { Dentry, FileOperations, FileSystemType, Inode, InodeOperations, InodeType, Mount, SeekType, SuperOperations, VFile } from "./fs"
+import { simpleCreate, simpleLookup, simpleRmdir } from "./common"
 import { ResizableBuffer } from "./ResizableBuffer"
 
 class MemFSInode extends Inode {
@@ -26,22 +26,38 @@ class MemFSFile extends VFile {
     }
 }
 
-class NotMemFSError extends Error {
+function appendErrorMsg(msg?: string) {
+    return msg ? ': ' + msg : ''
+}
+
+class MemFSError extends Error {
     constructor(msg?: string) {
-        super(`not memfs object`)
+        super('memfs error' + appendErrorMsg(msg))
+    }
+}
+
+class MemFSTypeError extends MemFSError {
+    constructor(msg?: string) {
+        super('not memfs object')
+    }
+}
+
+class MemFSSeekOutOfRangeError extends MemFSError {
+    constructor(msg?: string) {
+        super('seek out of range' + appendErrorMsg(msg))
     }
 }
 
 function getAsMemFSInode(inode: Inode): MemFSInode {
-    if (!(inode instanceof MemFSFile)) {
-        throw new NotMemFSError()
+    if (!(inode instanceof MemFSInode)) {
+        throw new MemFSTypeError()
     }
     return inode
 }
 
 function getAsMemFSFile(file: VFile): MemFSFile {
     if (!(file instanceof MemFSFile)) {
-        throw new NotMemFSError()
+        throw new MemFSTypeError()
     }
     return file
 }
@@ -54,13 +70,13 @@ function mkInode(type: InodeType): Inode {
         case InodeType.DIR:
             return new MemFSInode(InodeType.DIR, memFSInodeOperations, undefined)
         default:
-            throw Error(`memfs: unsupported inode type: ${type}`)
+            throw new MemFSError('unsupported inode type: ' + type)
     }
 }
 
 const memFSInodeOperations: InodeOperations = {
     lookup: simpleLookup,
-    create: simpleCreaate,
+    create: simpleCreate,
     link: function (dir: Dentry, old_dentry: Dentry, new_dentry: Dentry): Promise<void> {
         throw new Error("Function not implemented.")
     },
@@ -86,22 +102,53 @@ const memFSInodeOperations: InodeOperations = {
 }
 
 const memFSFileOperations: FileOperations = {
-    llseek: function (file: VFile, offset: number, rel: number): Promise<void> {
-        throw new Error("Function not implemented.")
-    },
-    read: async function (file: VFile, dst: ArrayBuffer, offset: number, size: number): Promise<void> {
-        let inode = getAsMemFSInode(file.inode)
+    llseek: async function (file: VFile, offset: number, rel: SeekType): Promise<void> {
+        let f = getAsMemFSFile(file)
+        let inode = getAsMemFSInode(f.inode)
         if (!inode.data) {
-            throw Error('negative inode')
+            throw new MemFSError('cannot seek negative inode')
         }
-        inode.data.read(offset, size, dst)
+        let limit = inode.data.limit
+        let newPos = 0
+
+        switch (rel) {
+            case SeekType.SET:
+                newPos = offset
+                break
+            case SeekType.CUR:
+                newPos = f.pos + offset
+                break
+            case SeekType.END:
+                newPos = limit + offset
+                break
+            default:
+                throw new MemFSError('invalid llseek type')
+        }
+
+        if (newPos < 0 || newPos >= limit) {
+            throw new MemFSSeekOutOfRangeError()
+        }
+
+        f.pos = newPos
     },
-    write: async function (file: VFile, src: ArrayBuffer, offset: number, size: number): Promise<void> {
-        let inode = getAsMemFSInode(file.inode)
+    read: async function (file: VFile, dst: ArrayBuffer, size: number): Promise<void> {
+        let f = getAsMemFSFile(file)
+        let inode = getAsMemFSInode(f.inode)
         if (!inode.data) {
-            throw Error('negative inode')
+            throw new MemFSError('cannot read negative inode')
         }
-        inode.data.write(offset, size, src)
+        //console.log(inode.data.tree.root.children[0].children[0].children[0].children[0].children[0].children[0].children[0].children[0].data)
+        inode.data.read(f.pos, size, dst)
+        f.pos += size
+    },
+    write: async function (file: VFile, src: ArrayBuffer, size: number): Promise<void> {
+        let f = getAsMemFSFile(file)
+        let inode = getAsMemFSInode(f.inode)
+        if (!inode.data) {
+            throw new MemFSError('cannot write negative inode')
+        }
+        inode.data.write(f.pos, size, src)
+        f.pos += size
     },
     open: async function (file: VFile): Promise<VFile> {
         let inode = getAsMemFSInode(file.inode)
@@ -110,9 +157,7 @@ const memFSFileOperations: FileOperations = {
         }
         return new MemFSFile(inode)
     },
-    flush: function (): Promise<void> {
-        throw new Error("Function not implemented.")
-    },
+    flush: async function (): Promise<void> { },
     release: function (): Promise<void> {
         throw new Error("Function not implemented.")
     },
@@ -121,6 +166,11 @@ const memFSFileOperations: FileOperations = {
 const memFSSuperOperations: SuperOperations = {
     mkInode: async function (type: InodeType): Promise<Inode> {
         return mkInode(type)
+    },
+
+    mkVFile: async function (inode: Inode): Promise<VFile> {
+        let ino = getAsMemFSInode(inode)
+        return new MemFSFile(ino)
     }
 }
 

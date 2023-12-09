@@ -108,13 +108,20 @@ export class VFile {
     }
 }
 
+
+export enum SeekType {
+    SET,    // from the beginning of file
+    CUR,    // from current position
+    END,    // from the end of file
+}
+
 /**
  * Operations on VFile object
  */
 export interface FileOperations {
-    llseek: (file: VFile, offset: number, rel: number) => Promise<void>
-    read: (file: VFile, dst: ArrayBuffer, offset: number, size: number) => Promise<void>
-    write: (file: VFile, src: ArrayBuffer, offset: number, size: number) => Promise<void>
+    llseek: (file: VFile, offset: number, rel: SeekType) => Promise<void>
+    read: (file: VFile, dst: ArrayBuffer, size: number) => Promise<void>
+    write: (file: VFile, src: ArrayBuffer, size: number) => Promise<void>
     open: (file: VFile) => Promise<VFile>
     flush: () => Promise<void>
     release: () => Promise<void>
@@ -213,6 +220,7 @@ export interface InodeOperations {
 
 export interface SuperOperations {
     mkInode: (type: InodeType) => Promise<Inode>
+    mkVFile: (inode: Inode) => Promise<VFile>
 }
 
 /**

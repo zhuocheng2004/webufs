@@ -26,7 +26,8 @@
     "./build/*.d.ts"
   ],
   "scripts": {
-    "build": "rollup -c"
+    "build": "rollup -c",
+    "test": ""
   },
   "dependencies": {
     "@webufs/webufs": "^0.0.2"

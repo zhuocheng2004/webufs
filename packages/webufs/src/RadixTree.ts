@@ -68,8 +68,11 @@ export class RadixTreeNode<T> {
             return this
         }
 
-        let i = index & ((1 << this.bits) - 1)
-        let next = index >> this.bits
+        let shift = (this.maxLevels - this.level - 1) * this.bits
+        let i = index >> shift
+        i = i & ((1 << this.bits) - 1)
+        let next = index & ((1 << shift) - 1)
+        //console.log(`index=${index}, i=${i}, next=${next}`)
         let child = this.children[i]
         if (!child) {
             child = this.children[i] = new RadixTreeNode(this.maxLevels, this.level+1, this.bits)

@@ -1,8 +1,12 @@
 
-import { Dentry, FileSystemType } from './fs'
+import { Dentry, FileSystemType, SeekType } from './fs'
 import { VFS, LookupType } from './VFS'
 import { Context, FileDescriptor } from './Context'
 import { InMemoryFSType, InMemoryFS } from './memory'
+
+// These are only for debug
+import { RadixTree } from './RadixTree'
+import { ResizableBuffer } from './ResizableBuffer'
 
 /**
  * The default VFS object - you can always use it.
@@ -27,14 +31,21 @@ async function createDefaultContext(): Promise<Context> {
     return ctx
 }
 
+const debug = {
+    RadixTree,
+    ResizableBuffer
+}
+
 export {
     Dentry,
     FileSystemType,
+    SeekType,
     LookupType,
     VFS, defaultVFS, 
     Context, createDefaultContext, FileDescriptor,
     // default FS implementations
-    InMemoryFSType, InMemoryFS
-}
+    InMemoryFSType, InMemoryFS,
 
-export default defaultVFS
+    // Do not use the following. They are for debug purpose.
+    debug
+}

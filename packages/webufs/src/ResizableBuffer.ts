@@ -4,7 +4,7 @@
  * 
  * Implemented using radix-tree
  * 
- * Characteristic: Only allocate memory on writing.
+ * Feature: Only allocate memory on writing.
  */
 
 import { RadixTree } from "./RadixTree";
@@ -32,7 +32,11 @@ export class ResizableBuffer {
             throw Error('addr is not multiples of page size')
         }
 
-        let node = this.tree.getLeaf(addr >> ResizableBuffer.PAGE_SHIFT)
+        return this.getBufferIdx(addr >> ResizableBuffer.PAGE_SHIFT)
+    }
+
+    getBufferIdx(index: number): Uint8Array {
+        let node = this.tree.getLeaf(index)
 
         let array: Uint8Array
         if (node.data) {
@@ -51,9 +55,9 @@ export class ResizableBuffer {
         }
 
         let index = offset >> ResizableBuffer.PAGE_SHIFT
-        let rel = offset && ResizableBuffer.PAGE_MASK
+        let rel = offset & ResizableBuffer.PAGE_MASK
 
-        let buffer = this.getBuffer(index)
+        let buffer = this.getBufferIdx(index)
     
         let view = new DataView(dest)
     
@@ -61,7 +65,7 @@ export class ResizableBuffer {
             if (rel >= ResizableBuffer.PAGE_SIZE) {
                 rel -= ResizableBuffer.PAGE_SIZE
                 index++
-                buffer = this.getBuffer(index)
+                buffer = this.getBufferIdx(index)
             }
 
             view.setUint8(i, buffer[rel])
@@ -74,17 +78,18 @@ export class ResizableBuffer {
         let view = new DataView(src)
 
         let index = offset >> ResizableBuffer.PAGE_SHIFT
-        let rel = offset && ResizableBuffer.PAGE_MASK
+        let rel = offset & ResizableBuffer.PAGE_MASK
 
-        let buffer = this.getBuffer(index)
+        let buffer = this.getBufferIdx(index)
 
         for (let i = 0; i < size; i++) {
             if (rel >= ResizableBuffer.PAGE_SIZE) {
                 rel -= ResizableBuffer.PAGE_SIZE
                 index++
-                buffer = this.getBuffer(index)
+                buffer = this.getBufferIdx(index)
             }
 
+            //console.log(`Writing ${view.getUint8(i)}@${rel}`)
             buffer[rel] = view.getUint8(i)
 
             rel++

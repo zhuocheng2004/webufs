@@ -18,7 +18,7 @@ export async function simpleLookup(base: Dentry, childName: string): Promise<Den
     return null
 }
 
-export async function simpleCreaate(inode: Inode, dentry: Dentry) {
+export async function simpleCreate(inode: Inode, dentry: Dentry) {
     dentry.inode = inode
     dentry.parent.add(dentry)
 }
