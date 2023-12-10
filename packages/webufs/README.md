@@ -1,6 +1,8 @@
 # Webufs, a Linux-style Filesystem Framework.
 
-I just started to work on this library. Please wait and see.
+If you want to use this library directly in your browser, please see the document of the package "@webufs/webufs-browser"
+
+I just started to work on this library. Current versions are all unstable. Please wait and see.
 
 Currently everything is slow and memory-consuming. I will improve performance in the future.
 
