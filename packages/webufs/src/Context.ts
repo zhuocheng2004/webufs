@@ -11,7 +11,38 @@ export type OpenFlag = {
     /**
      * Used together with CREATE. Throw error when file exists
      */
-    excl ?: boolean
+    excl ?: boolean,
+
+    /**
+     * only read, no writing
+     */
+    rdonly ?: boolean,
+
+    /**
+     * We are going to open a directory
+     */
+    directory ?: boolean,
+}
+
+export enum DirEntryType {
+    DT_BLK,
+    DT_CHR,
+    DT_DIR,     // directory
+    DT_FIFO,
+    DT_LNK,     // symbolic link
+    DT_REG,     // regular file
+    DT_SOCK,
+    DT_UNKNOWN,
+} 
+
+export class DirEntry {
+    name: string
+    type: DirEntryType
+
+    constructor(name: string, type: DirEntryType) {
+        this.name = name
+        this.type = type
+    }
 }
 
 export class FileDescriptor {
@@ -21,7 +52,7 @@ export class FileDescriptor {
     constructor(file: VFile) {
         this.file = file
         if (!file.inode.file_op) {
-            throw Error('cannot create FileDescriptor: file operations unavailable')
+            throw new Error('cannot create file descriptor without file operations')
         }
         this.op = file.inode.file_op
     }
@@ -30,7 +61,7 @@ export class FileDescriptor {
      * Close an opened file. This will flush all pending operations.
      */
     async close() {
-        await this.op.flush()
+        await this.op?.flush()
     }
 
     async seek(offset: number, rel: SeekType) {
@@ -63,6 +94,39 @@ export class FileDescriptor {
 
     private async writeInternal(src: ArrayBuffer, size: number) {
         await this.op.write(this.file, src, size)
+    }
+
+    async getdents(): Promise<Array<DirEntry>> {
+        if (!this.file.inode.dentry) {
+            throw Error('flying inode')
+        }
+        let base = this.file.inode.dentry
+
+        let list = new Array<DirEntry>()
+        await this.op.iterate(this.file, async (name) => {
+            let dentry = await this.file.inode.inode_op.lookup(base, name)
+            if (dentry && dentry.inode) {
+                let type: DirEntryType
+                switch (dentry.inode.type) {
+                    case InodeType.DIR:
+                        type = DirEntryType.DT_DIR
+                        break
+                    case InodeType.REG:
+                        type = DirEntryType.DT_REG
+                        break
+                    case InodeType.SYMLINK:
+                        type = DirEntryType.DT_LNK
+                        break
+                    default:
+                        type = DirEntryType.DT_UNKNOWN
+                }
+                let dirent = new DirEntry(name, type)
+                list.push(dirent)
+            } else {
+                console.warn('iterate() provided non-exist file or negative dentry')
+            }
+        })
+        return list
     }
 }
 
@@ -202,6 +266,8 @@ export class Context {
     }
 
     async open(path: string, flags?: OpenFlag): Promise<FileDescriptor> {
+        //console.log(`open: ${path} with flags ${flags}`)
+
         if (!flags) flags = {}
 
         try {
@@ -220,16 +286,25 @@ export class Context {
                 if (!flags.create) {
                     throw Error('file does not exist')
                 }
-                inode = await dentry.mount.op.mkInode(InodeType.REG)
+                if (flags.directory) {
+                    inode = await dentry.mount.op.mkInode(InodeType.DIR)
+                } else {
+                    inode = await dentry.mount.op.mkInode(InodeType.REG)
+                }
                 await inode.inode_op.create(inode, dentry)
             }
 
-            if (!inode.file_op) {
-                throw Error('file operations not available')
-            }
+            inode.dentry = dentry
 
             let file = await dentry.mount.op.mkVFile(inode)
-            await inode.file_op.open(file)
+
+            if (!flags.directory) {
+                if (!inode.file_op) {
+                    throw Error('file operations not available')
+                }
+    
+                await inode.file_op.open(file)
+            }
 
             return new FileDescriptor(file)
         } catch (error) {

@@ -93,6 +93,11 @@ export class Inode {
      */
     file_op?: FileOperations
 
+    /**
+     * (optional) dentry associated with a file
+     */
+    dentry?: Dentry
+
     constructor(type: InodeType, inode_op: InodeOperations, file_op?: FileOperations) {
         this.type = type
         this.inode_op = inode_op
@@ -115,6 +120,8 @@ export enum SeekType {
     END,    // from the end of file
 }
 
+export type IterateCallback = (name: string) => Promise<void>
+
 /**
  * Operations on VFile object
  */
@@ -122,6 +129,7 @@ export interface FileOperations {
     llseek: (file: VFile, offset: number, rel: SeekType) => Promise<void>
     read: (file: VFile, dst: ArrayBuffer, size: number) => Promise<void>
     write: (file: VFile, src: ArrayBuffer, size: number) => Promise<void>
+    iterate: (file: VFile, callback: IterateCallback) => Promise<void>
     open: (file: VFile) => Promise<VFile>
     flush: () => Promise<void>
     release: () => Promise<void>

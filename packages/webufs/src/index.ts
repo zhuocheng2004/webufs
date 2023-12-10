@@ -1,7 +1,13 @@
 
-import { Dentry, FileSystemType, SeekType } from './fs'
+import { 
+    Dentry, InodeType, Inode, SeekType,
+    FileSystemType, Mount
+} from './fs'
 import { VFS, LookupType } from './VFS'
-import { Context, FileDescriptor } from './Context'
+import {
+    Context, FileDescriptor, 
+    DirEntry, DirEntryType
+} from './Context'
 import { InMemoryFSType, InMemoryFS } from './memory'
 
 // These are only for debug
@@ -37,12 +43,13 @@ const debug = {
 }
 
 export {
-    Dentry,
-    FileSystemType,
-    SeekType,
+    Dentry, InodeType, Inode, SeekType,
+    FileSystemType, Mount,
     LookupType,
     VFS, defaultVFS, 
     Context, createDefaultContext, FileDescriptor,
+    DirEntry, DirEntryType,
+
     // default FS implementations
     InMemoryFSType, InMemoryFS,
 

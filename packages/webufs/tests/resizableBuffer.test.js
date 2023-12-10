@@ -15,15 +15,10 @@ describe('ResizableBuffer Test', () => {
 
                 expect(() => buffer.read(0, 2, dst)).toThrow()
 
-                const src = new ArrayBuffer(4)
-                const srcView = new DataView(src)
-                srcView.setUint8(0, 0x30)
-                srcView.setUint8(1, 0x31)
-                srcView.setUint8(2, 0x32)
-                srcView.setUint8(3, 0x33)
+                const src = new Uint8Array([0x30, 0x31, 0x32, 0x33])
 
-                buffer.write(0, 4, src)
-                buffer.write(2, 4, src)
+                buffer.write(0, 4, src.buffer)
+                buffer.write(2, 4, src.buffer)
 
                 expect(() => buffer.read(0, 8, dst)).toThrow()
 
@@ -44,15 +39,10 @@ describe('ResizableBuffer Test', () => {
                 const dst = new ArrayBuffer(8)
                 const dstView = new DataView(dst)
 
-                const src = new ArrayBuffer(4)
-                const srcView = new DataView(src)
-                srcView.setUint8(0, 0x30)
-                srcView.setUint8(1, 0x31)
-                srcView.setUint8(2, 0x32)
-                srcView.setUint8(3, 0x33)
+                const src = new Uint8Array([0x30, 0x31, 0x32, 0x33])
 
                 for (let i = 0; i < (ResizableBuffer.PAGE_SIZE / 4 + 2); i++) {
-                        buffer.write(i * 4, 4, src)
+                        buffer.write(i * 4, 4, src.buffer)
                 }
 
                 expect(buffer.limit).toBe(ResizableBuffer.PAGE_SIZE + 8)
@@ -76,16 +66,11 @@ describe('ResizableBuffer Test', () => {
                 const dst = new ArrayBuffer(4)
                 const dstView = new DataView(dst)
 
-                const src = new ArrayBuffer(4)
-                const srcView = new DataView(src)
-                srcView.setUint8(0, 0x30)
-                srcView.setUint8(1, 0x31)
-                srcView.setUint8(2, 0x32)
-                srcView.setUint8(3, 0x33)
+                const src = new Uint8Array([0x30, 0x31, 0x32, 0x33])
 
                 const N = 100000
-                buffer.write(0, 4, src)
-                buffer.write(N, 4, src)
+                buffer.write(0, 4, src.buffer)
+                buffer.write(N, 4, src.buffer)
                 expect(buffer.limit).toBe(N + 4)
 
                 buffer.read(0, 4, dst)

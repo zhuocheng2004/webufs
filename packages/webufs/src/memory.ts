@@ -6,7 +6,7 @@
  * also a toy example
  */
 
-import { Dentry, FileOperations, FileSystemType, Inode, InodeOperations, InodeType, Mount, SeekType, SuperOperations, VFile } from "./fs"
+import { Dentry, FileOperations, FileSystemType, Inode, InodeOperations, InodeType, IterateCallback, Mount, SeekType, SuperOperations, VFile } from "./fs"
 import { simpleCreate, simpleLookup, simpleRmdir } from "./common"
 import { ResizableBuffer } from "./ResizableBuffer"
 
@@ -68,7 +68,7 @@ function mkInode(type: InodeType): Inode {
         case InodeType.REG:
             return new MemFSInode(InodeType.REG, memFSInodeOperations, memFSFileOperations)
         case InodeType.DIR:
-            return new MemFSInode(InodeType.DIR, memFSInodeOperations, undefined)
+            return new MemFSInode(InodeType.DIR, memFSInodeOperations, memFSDirFileOperations)
         default:
             throw new MemFSError('unsupported inode type: ' + type)
     }
@@ -137,7 +137,6 @@ const memFSFileOperations: FileOperations = {
         if (!inode.data) {
             throw new MemFSError('cannot read negative inode')
         }
-        //console.log(inode.data.tree.root.children[0].children[0].children[0].children[0].children[0].children[0].children[0].children[0].data)
         inode.data.read(f.pos, size, dst)
         f.pos += size
     },
@@ -150,6 +149,9 @@ const memFSFileOperations: FileOperations = {
         inode.data.write(f.pos, size, src)
         f.pos += size
     },
+    iterate: function (file: VFile, callback: IterateCallback): Promise<void> {
+        throw new Error("cannot iterate non-directory file")
+    },
     open: async function (file: VFile): Promise<VFile> {
         let inode = getAsMemFSInode(file.inode)
         if (!inode.data) {
@@ -161,6 +163,38 @@ const memFSFileOperations: FileOperations = {
     release: function (): Promise<void> {
         throw new Error("Function not implemented.")
     },
+}
+
+const memFSDirFileOperations: FileOperations = {
+    llseek: function (file: VFile, offset: number, rel: SeekType): Promise<void> {
+        throw new Error("cannot seek dir")
+    },
+    read: function (file: VFile, dst: ArrayBuffer, size: number): Promise<void> {
+        throw new Error("cannot read dir")
+    },
+    write: function (file: VFile, src: ArrayBuffer, size: number): Promise<void> {
+        throw new Error("cannot write dir")
+    },
+    iterate: async function (file: VFile, callback: IterateCallback) {
+        if (file.inode.type !== InodeType.DIR) {
+            throw new MemFSError('only directories can be iterated')
+        }
+        if (!file.inode.dentry) {
+            throw new MemFSError('only files on directory tree can be iterated')
+        }
+        let dentry = file.inode.dentry
+        for (let subdir of dentry.children) {
+            await callback(subdir.name)
+        }
+    },
+    open: async function (file: VFile): Promise<VFile> {
+        let inode = getAsMemFSInode(file.inode)
+        return new MemFSFile(inode)
+    },
+    flush: async function (): Promise<void> { },
+    release: function (): Promise<void> {
+        throw new Error("Function not implemented.")
+    }
 }
 
 const memFSSuperOperations: SuperOperations = {

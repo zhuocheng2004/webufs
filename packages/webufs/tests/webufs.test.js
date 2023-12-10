@@ -1,7 +1,7 @@
 
 import { describe, expect, test } from '@jest/globals'
 
-import { SeekType, createDefaultContext } from '@webufs/webufs'
+import { DirEntryType, SeekType, createDefaultContext } from '@webufs/webufs'
 
 describe('Jest Environment Test', () => {
         test('Get Webufs', async () => {
@@ -56,19 +56,18 @@ describe('File Operation Test', () => {
         test('seek/read/write', async () => {
                 const ctx = await createDefaultContext()
 
+                await ctx.mkdir('a')
+                await ctx.mkdir('a/b')
+                await ctx.chdir('a/b')
+
                 const fd = await ctx.open('a.txt', { create: true })
 
-                const src = new ArrayBuffer(4)
-                const srcView = new DataView(src)
-                srcView.setUint8(0, 0x30)
-                srcView.setUint8(1, 0x31)
-                srcView.setUint8(2, 0x32)
-                srcView.setUint8(3, 0x33)
+                const src = new Uint8Array([0x30, 0x31, 0x32, 0x33])
 
-                await fd.write(src)
-                await fd.write(src)
-                await fd.write(src)
-                await fd.write(src)
+                await fd.write(src.buffer)
+                await fd.write(src.buffer)
+                await fd.write(src.buffer)
+                await fd.write(src.buffer)
 
                 const dst = new ArrayBuffer(16)
                 const dstView = new DataView(dst)
@@ -107,6 +106,74 @@ describe('File Operation Test', () => {
                         expect(dstView.getUint8(i * 4 + 1)).toBe(0x30)
                         expect(dstView.getUint8(i * 4 + 2)).toBe(0x31)
                         expect(dstView.getUint8(i * 4 + 3)).toBe(0x32)
+                }
+
+                await fd.close()
+        })
+
+        test('large data read/write', async () => {
+                const ctx = await createDefaultContext()
+
+                const N = 0x4000
+                const src = new Uint8Array(N)
+                for (let i = 0; i < N; i++) {
+                        src[i] = Math.floor(Math.random() * 0x100)
+                }
+
+                const fd = await ctx.open('a.txt', { create: true })
+                fd.write(src.buffer)
+
+                const dst = new ArrayBuffer(N)
+                const dstView = new DataView(dst)
+                fd.seek(-N, SeekType.END)       // just a test
+                fd.read(dst)
+
+                for (let i = 0; i < N; i++) {
+                        expect(dstView.getUint8(i)).toBe(src[i])
+                }
+        })
+
+        test('scan files in dir', async () => {
+                const ctx = await createDefaultContext()
+
+                let fd = await ctx.open('a.txt', { create: true })
+                const src = new Uint8Array([0x30, 0x31, 0x32, 0x33])
+                for (let i = 0; i < 1000; i++) {
+                        fd.write(src.buffer)
+                }
+                await fd.close()
+
+                await ctx.mkdir('d1')
+                await ctx.mkdir('d2')
+
+                fd = await ctx.open('b.txt', { create: true })
+                await fd.close()
+
+                await ctx.mkdir('d3')
+                // subdir files shouldn't affect this dir
+                await ctx.chdir('d3')
+                await ctx.mkdir('abcdefgh')
+                fd = await ctx.open('xyzw.cpp', { create: true })
+                await fd.close()
+                await ctx.chdir('..')
+
+                fd = await ctx.open('/', { directory: true })
+                let fileInfos = await fd.getdents()
+                expect(fileInfos.length).toBe(5)
+                for (let entry of fileInfos) {
+                        switch (entry.name) {
+                                case 'a.txt':
+                                case 'b.txt':
+                                        expect(entry.type).toBe(DirEntryType.DT_REG)
+                                        break
+                                case 'd1':
+                                case 'd2':
+                                case 'd3':
+                                        expect(entry.type).toBe(DirEntryType.DT_DIR)
+                                        break
+                                default:
+                                        throw Error('found non-recognized file')
+                        }
                 }
         })
 })

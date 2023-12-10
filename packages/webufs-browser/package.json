@@ -1,6 +1,6 @@
 {
   "name": "@webufs/webufs-browser",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "webufs browser-side usable script build",
   "keywords": [
     "browser", "filesystem", "fs", "web"
@@ -25,7 +25,7 @@
     "test": ""
   },
   "dependencies": {
-    "@webufs/webufs": "^0.0.9",
+    "@webufs/webufs": "^0.0.10",
     "@webufs/webufs-idbfs": "^0.0.6"
   }
 }
