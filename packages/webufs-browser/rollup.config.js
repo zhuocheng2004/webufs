@@ -1,12 +1,12 @@
 
-import { nodeResolve } from '@rollup/plugin-node-resolve'
+import nodeResolve from '@rollup/plugin-node-resolve'
 import terser from '@rollup/plugin-terser'
 import esbuild from 'rollup-plugin-esbuild'
 
 export default [
     {
         input: 'src/index.ts',
-        plugins: [ esbuild(), nodeResolve() ],
+        plugins: [ nodeResolve(), esbuild() ],
         output: [
             {
                 format: 'iife',
@@ -17,7 +17,7 @@ export default [
     },
     {
         input: 'src/index.ts',
-        plugins: [ esbuild(), nodeResolve(), terser() ],
+        plugins: [ nodeResolve(), esbuild(), terser() ],
         output: [
             {
                 format: 'iife',

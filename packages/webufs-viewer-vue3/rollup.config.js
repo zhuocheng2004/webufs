@@ -1,6 +1,7 @@
 
+import nodeResolve from '@rollup/plugin-node-resolve'
+import esbuild from 'rollup-plugin-esbuild'
 import vue from 'rollup-plugin-vue'
-import typescript from 'rollup-plugin-typescript2'
 
 export default {
     input: 'src/index.ts',
@@ -11,15 +12,5 @@ export default {
         },
     ],
     external: [ 'vue' ],
-    plugins: [
-        vue(),
-        typescript({
-            tsconfigOverride: {
-                compilerOptions: {
-                    declaration: true,
-                },
-                include: null,
-            }
-        })
-    ],
+    plugins: [ nodeResolve(), vue(), esbuild() ],
 }

@@ -1,11 +1,3 @@
 {
-    "compilerOptions": {
-        "target": "ESNext",
-        "module": "ESNext",
-        "moduleResolution": "Node",
-        "strict": true,
-    },
-    "include": [
-        "src/*.ts"
-    ]
+    "extends": "../../tsconfig.json"
 }

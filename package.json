@@ -1,6 +1,6 @@
 {
   "name": "webufs",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "A Linux-style Web FileSystem Framework",
   "author": "parabola2004 <zhuocheng2004@gmail.com> (http://parabola2004.eastasia.cloudapp.azure.com/)",
   "license": "MIT",
@@ -9,7 +9,7 @@
     "url": "https://github.com/zhuocheng2004/webufs.git"
   },
   "workspaces": [
-    "packages/*"
+    "packages/**"
   ],
   "scripts": {
     "build": "npm run build --workspace packages",
@@ -19,19 +19,10 @@
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^15.2.3",
-    "@rollup/plugin-terser": "^0.4.4",
-    "@rollup/plugin-typescript": "^11.1.5",
-    "@typescript-eslint/eslint-plugin": "^6.11.0",
-    "@typescript-eslint/parser": "^6.11.0",
-    "eslint": "^8.53.0",
     "jest": "^29.7.0",
-    "prettier": "^3.1.0",
-    "rollup": "^4.4.1",
+    "rollup": "^4.9.6",
     "rollup-plugin-dts": "^6.1.0",
-    "rollup-plugin-esbuild": "^6.1.0",
-    "rollup-plugin-typescript2": "^0.36.0",
-    "rollup-plugin-vue": "^6.0.0",
-    "tslib": "^2.6.2",
-    "typescript": "^5.2.2"
+    "rollup-plugin-esbuild": "^6.1.1",
+    "webufs": "link:"
   }
 }

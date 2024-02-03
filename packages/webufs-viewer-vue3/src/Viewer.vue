@@ -1,11 +1,15 @@
-<template>
-    <h1>Hello World!</h1>
-    <button @click="count++">Count is: {{ count }}</button>
-</template>
+<script lang="ts">
+import { defineComponent } from 'vue';
 
-<script setup lang="ts">
-import { ref } from 'vue'
-
-const count = ref(0)
+export default defineComponent({
+    data() {
+        return {
+            count: 1
+        }
+    }
+})
 </script>
 
+<template>
+    <h1>Hello World!</h1>
+</template>

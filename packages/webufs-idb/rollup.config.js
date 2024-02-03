@@ -1,5 +1,5 @@
 
-import { nodeResolve } from '@rollup/plugin-node-resolve'
+import nodeResolve from '@rollup/plugin-node-resolve'
 import esbuild from 'rollup-plugin-esbuild'
 import dts from 'rollup-plugin-dts'
 
@@ -16,7 +16,7 @@ export default [
     },
     {
         input: 'src/index.ts',
-        plugins: [ dts() ],
+        plugins: [ nodeResolve(), dts() ],
         output: [
             {
                 format: 'es',

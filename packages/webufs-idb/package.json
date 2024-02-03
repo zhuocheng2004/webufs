@@ -1,6 +1,6 @@
 {
   "name": "@webufs/webufs-idb",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "IndexedDB implementation of webufs API",
   "keywords": [
     "indexeddb", "idb", "idbfs", "filesystem", "fs", "web"
@@ -25,6 +25,6 @@
     "test": ""
   },
   "dependencies": {
-    "@webufs/webufs": "^0.0.2"
+    "@webufs/webufs": "^0.0.12"
   }
 }
