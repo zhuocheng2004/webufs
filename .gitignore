@@ -16,6 +16,8 @@ dist
 
 packages/*/build
 
+packages/*/.debug*
+
 local-install.sh
 
 .*.swp

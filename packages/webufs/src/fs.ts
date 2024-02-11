@@ -98,10 +98,28 @@ export class Inode {
      */
     dentry?: Dentry
 
+    /**
+     * size of the associated file
+     */
+    size: number = 0
+
+    private nlink: number = 0
+
     constructor(type: InodeType, inode_op: InodeOperations, file_op?: FileOperations) {
         this.type = type
         this.inode_op = inode_op
         this.file_op = file_op
+    }
+
+    get() {
+        this.nlink++
+    }
+
+    put() {
+        this.nlink--
+        if (this.nlink <= 0) {
+            this.dentry?.mount?.op.dropInode(this)
+        }
     }
 }
 
@@ -122,6 +140,41 @@ export enum SeekType {
 
 export type IterateCallback = (name: string) => Promise<void>
 
+
+export enum StatConst {
+    IFMT   = 0o0170000,
+    IFSOCK =  0o140000,
+    IFLNK  =  0o120000,
+    IFREG  =  0o100000,
+    IFBLK  =  0o060000,
+    IFDIR  =  0o040000,
+    IFCHR  =  0o020000,
+    IFIFO  =  0o010000,
+    ISUID  =  0o004000,
+    ISGID  =  0o002000,
+    ISVTX  =  0o001000,
+}
+
+export class KStat {
+    /** mask of  requested fields */
+    result_mask: number
+
+    /** mode */
+    mode: number
+
+    /** size of file */
+    size: number = 0
+
+    /** inode number of file */
+    ino: number = 0
+
+
+    constructor(result_mask: number, mode: number) {
+        this.result_mask = result_mask
+        this.mode = mode
+    }
+}
+
 /**
  * Operations on VFile object
  */
@@ -132,6 +185,8 @@ export interface FileOperations {
     iterate: (file: VFile, callback: IterateCallback) => Promise<void>
     open: (file: VFile) => Promise<VFile>
     flush: () => Promise<void>
+
+    /** called when file is closed */
     release: () => Promise<void>
 }
 
@@ -229,6 +284,7 @@ export interface InodeOperations {
 export interface SuperOperations {
     mkInode: (type: InodeType) => Promise<Inode>
     mkVFile: (inode: Inode) => Promise<VFile>
+    dropInode: (inode: Inode) => Promise<void>
 }
 
 /**

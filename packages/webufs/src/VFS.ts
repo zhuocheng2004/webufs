@@ -1,5 +1,5 @@
 
-import { Dentry, FileSystemType, InodeType, Mount } from "./fs"
+import { Dentry, FileSystemType, InodeType, KStat } from "./fs"
 
 /**
  * used in path_lookup
@@ -32,7 +32,7 @@ export class VFS {
         for (let fs of this.fileSystems) {
             if (fs.name === name) return fs
         }
-        throw Error(`file system type ${name} not found`)
+        throw Error(`file system type "${name}" not found`)
     }
 
     /**

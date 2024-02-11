@@ -1,6 +1,6 @@
 {
   "name": "@webufs/webufs-viewer-vue3",
-  "version": "0.0.6",
+  "version": "0.0.8",
   "description": "A Vue3 Component for viewing webufs file system",
   "keywords": [
     "vue",
@@ -30,10 +30,7 @@
     "test": ""
   },
   "dependencies": {
-    "@webufs/webufs": "^0.0.12"
-  },
-  "devDependencies": {
-    "rollup-plugin-vue": "^6.0.0"
+    "@webufs/webufs": "^0.0.13"
   },
   "peerDependencies": {
     "vue": "^3.4.15"

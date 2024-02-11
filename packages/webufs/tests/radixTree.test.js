@@ -1,7 +1,7 @@
 
 import { describe, expect, test } from '@jest/globals'
 
-import { debug } from '@webufs/webufs'
+import { debug } from '../build/index'
 
 const RadixTree = debug.RadixTree
 

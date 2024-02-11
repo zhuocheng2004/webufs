@@ -1,10 +1,11 @@
-# Webufs, a Linux-style Filesystem Framework.
+# Webufs, a Linux-style Web Filesystem Framework.
 
 If you want to use this library directly in your browser, please see the document of the package "@webufs/webufs-browser"
 
-I just started to work on this library. Current versions are all unstable. Please wait and see.
+I just started to work on this library. The current versions are all unstable. 
+I will also improve its performance in the future. Please wait and see.
 
-Currently everything is slow and memory-consuming. I will improve performance in the future.
+If you have any issues or suggestions, feel free to discuss them on GitHub. Thanks!
 
 ## Usage
 
@@ -46,17 +47,23 @@ const dstView = new DataView(dst)
 await fd.seek(2, SeekType.SET)          // offset +2 relative to file start 
 // You can seek relative to SET, CUR or END.
 await fd.read(dst)
-// read data from dstView...
+// read data from file into dstView...
+
+//  don't forget to close the file (this will also flush pending writing and release reference)
+await fd.close()
+
+// delete a file
+await ctx.unlink('a.txt')
 ```
 
-## Hope
+## Hope (not implemented yet)
 
 We might also add shell-like support:
 ```ts
 await sh.cd('/home/user/').run()
 await sh.echo('Hello!').pipe(base64()).to('a.txt').run()
 await sh.cmd(find('./src', '-name', '*.ts'))
-    .pipe(xargs(cat))
+    .pipe(xargs(cat()))
     .pipe(wc('-l'))
     .run()
 /**
@@ -67,5 +74,5 @@ await sh.cmd(find('./src', '-name', '*.ts'))
 That would be cool.
 
 ## Some Ideas
-I found that we can generate URL from Blob and use it to spawn Web Workers. That might give some ideas...
+I found that we can generate a URL from Blob and use it to spawn Web Workers. That might give some ideas...
 

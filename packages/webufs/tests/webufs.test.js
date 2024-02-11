@@ -1,7 +1,7 @@
 
 import { describe, expect, test } from '@jest/globals'
 
-import { DirEntryType, SeekType, createDefaultContext } from '@webufs/webufs'
+import { DirEntryType, SeekType, createDefaultContext, StatConst } from '../build/index'
 
 describe('Jest Environment Test', () => {
         test('Get Webufs', async () => {
@@ -49,6 +49,50 @@ describe('Directory Operation Test', () => {
                 expect(ctx.getcwd()).toBe('/')
                 await ctx.chdir('../../../../../../../../../../../../../../../../../../../../..')
                 expect(ctx.getcwd()).toBe('/')
+        })
+
+        test('scan files in dir', async () => {
+                const ctx = await createDefaultContext()
+
+                let fd = await ctx.open('a.txt', { create: true })
+                const src = new Uint8Array([0x30, 0x31, 0x32, 0x33])
+                for (let i = 0; i < 1000; i++) {
+                        fd.write(src.buffer)
+                }
+                await fd.close()
+
+                await ctx.mkdir('d1')
+                await ctx.mkdir('d2')
+
+                fd = await ctx.open('b.txt', { create: true })
+                await fd.close()
+
+                await ctx.mkdir('d3')
+                // subdir files shouldn't affect this dir
+                await ctx.chdir('d3')
+                await ctx.mkdir('abcdefgh')
+                fd = await ctx.open('xyzw.cpp', { create: true })
+                await fd.close()
+                await ctx.chdir('..')
+
+                fd = await ctx.open('/', { directory: true })
+                let fileInfos = await fd.getdents()
+                expect(fileInfos.length).toBe(5)
+                for (let entry of fileInfos) {
+                        switch (entry.name) {
+                                case 'a.txt':
+                                case 'b.txt':
+                                        expect(entry.type).toBe(DirEntryType.DT_REG)
+                                        break
+                                case 'd1':
+                                case 'd2':
+                                case 'd3':
+                                        expect(entry.type).toBe(DirEntryType.DT_DIR)
+                                        break
+                                default:
+                                        throw Error('found non-recognized file')
+                        }
+                }
         })
 })
 
@@ -121,59 +165,58 @@ describe('File Operation Test', () => {
                 }
 
                 const fd = await ctx.open('a.txt', { create: true })
-                fd.write(src.buffer)
+                await fd.write(src.buffer)
 
                 const dst = new ArrayBuffer(N)
                 const dstView = new DataView(dst)
-                fd.seek(-N, SeekType.END)       // just a test
-                fd.read(dst)
+                await fd.seek(-N, SeekType.END)       // just a test
+                await fd.read(dst)
+                await fd.close()
 
                 for (let i = 0; i < N; i++) {
                         expect(dstView.getUint8(i)).toBe(src[i])
                 }
         })
 
-        test('scan files in dir', async () => {
+        test('stat', async () => {
+                const ctx = await createDefaultContext()
+
+                const N = 0x4000
+                const src = new Uint8Array(N)
+                for (let i = 0; i < N; i++) {
+                        src[i] = Math.floor(Math.random() * 0x100)
+                }
+
+                let fd = await ctx.open('a.txt', { create: true })
+                await fd.write(src.buffer)
+                await fd.close()
+
+                let stat = await ctx.stat('a.txt')
+                expect(stat.size).toBe(0x4000)
+                expect(stat.mode & StatConst.IFMT).toBe(StatConst.IFREG)
+
+                await ctx.mkdir('dir')
+                stat = await ctx.stat('dir/')
+                expect(stat.size).toBe(0)
+                expect(stat.mode & StatConst.IFMT).toBe(StatConst.IFDIR)
+        })
+
+        test('link/unlink', async () => {
                 const ctx = await createDefaultContext()
 
                 let fd = await ctx.open('a.txt', { create: true })
-                const src = new Uint8Array([0x30, 0x31, 0x32, 0x33])
-                for (let i = 0; i < 1000; i++) {
-                        fd.write(src.buffer)
-                }
                 await fd.close()
-
-                await ctx.mkdir('d1')
-                await ctx.mkdir('d2')
-
-                fd = await ctx.open('b.txt', { create: true })
-                await fd.close()
-
-                await ctx.mkdir('d3')
-                // subdir files shouldn't affect this dir
-                await ctx.chdir('d3')
-                await ctx.mkdir('abcdefgh')
-                fd = await ctx.open('xyzw.cpp', { create: true })
-                await fd.close()
-                await ctx.chdir('..')
 
                 fd = await ctx.open('/', { directory: true })
                 let fileInfos = await fd.getdents()
-                expect(fileInfos.length).toBe(5)
-                for (let entry of fileInfos) {
-                        switch (entry.name) {
-                                case 'a.txt':
-                                case 'b.txt':
-                                        expect(entry.type).toBe(DirEntryType.DT_REG)
-                                        break
-                                case 'd1':
-                                case 'd2':
-                                case 'd3':
-                                        expect(entry.type).toBe(DirEntryType.DT_DIR)
-                                        break
-                                default:
-                                        throw Error('found non-recognized file')
-                        }
-                }
+                expect(fileInfos.length).toBe(1)
+                await fd.close()
+
+                await ctx.unlink('/a.txt')
+
+                fd = await ctx.open('/', { directory: true })
+                fileInfos = await fd.getdents()
+                expect(fileInfos.length).toBe(0)
+                await fd.close()
         })
 })

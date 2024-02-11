@@ -7,7 +7,7 @@
  */
 
 import { Dentry, FileOperations, FileSystemType, Inode, InodeOperations, InodeType, IterateCallback, Mount, SeekType, SuperOperations, VFile } from "./fs"
-import { simpleCreate, simpleLookup, simpleRmdir } from "./common"
+import { genericDropInode, simpleCreate, simpleLookup, simpleMkdir, simpleRmdir, simpleUnlink } from "./common"
 import { ResizableBuffer } from "./ResizableBuffer"
 
 class MemFSInode extends Inode {
@@ -15,6 +15,15 @@ class MemFSInode extends Inode {
 
     constructor(type: InodeType, inode_op: InodeOperations, file_op?: FileOperations) {
         super(type, inode_op, file_op)
+    }
+
+    updateSize(): boolean {
+        if (this.data) {
+            this.size = this.data.limit
+            return true
+        } else {
+            return false
+        }
     }
 }
 
@@ -80,15 +89,11 @@ const memFSInodeOperations: InodeOperations = {
     link: function (dir: Dentry, old_dentry: Dentry, new_dentry: Dentry): Promise<void> {
         throw new Error("Function not implemented.")
     },
-    unlink: function (dentry: Dentry): Promise<void> {
-        throw new Error("Function not implemented.")
-    },
+    unlink: simpleUnlink,
     symlink: function (dir: Dentry, dentry: Dentry, sym: string): Promise<void> {
         throw new Error("Function not implemented.")
     },
-    mkdir: async function (dentry: Dentry): Promise<void> {
-        dentry.inode = mkInode(InodeType.DIR)
-    },
+    mkdir: simpleMkdir,
     rmdir: simpleRmdir,
     mknod: function (dir: Inode, dentry: Dentry, dev: any): Promise<void> {
         throw new Error("Function not implemented.")
@@ -98,7 +103,7 @@ const memFSInodeOperations: InodeOperations = {
     },
     getLink: function (dir: Dentry, inode: Inode): Promise<string> {
         throw new Error("Function not implemented.")
-    }
+    },
 }
 
 const memFSFileOperations: FileOperations = {
@@ -148,6 +153,7 @@ const memFSFileOperations: FileOperations = {
         }
         inode.data.write(f.pos, size, src)
         f.pos += size
+        inode.updateSize()
     },
     iterate: function (file: VFile, callback: IterateCallback): Promise<void> {
         throw new Error("cannot iterate non-directory file")
@@ -160,9 +166,7 @@ const memFSFileOperations: FileOperations = {
         return new MemFSFile(inode)
     },
     flush: async function (): Promise<void> { },
-    release: function (): Promise<void> {
-        throw new Error("Function not implemented.")
-    },
+    release: async function (): Promise<void> { }
 }
 
 const memFSDirFileOperations: FileOperations = {
@@ -192,9 +196,7 @@ const memFSDirFileOperations: FileOperations = {
         return new MemFSFile(inode)
     },
     flush: async function (): Promise<void> { },
-    release: function (): Promise<void> {
-        throw new Error("Function not implemented.")
-    }
+    release: async function (): Promise<void> { }
 }
 
 const memFSSuperOperations: SuperOperations = {
@@ -205,7 +207,9 @@ const memFSSuperOperations: SuperOperations = {
     mkVFile: async function (inode: Inode): Promise<VFile> {
         let ino = getAsMemFSInode(inode)
         return new MemFSFile(ino)
-    }
+    },
+
+    dropInode: genericDropInode
 }
 
 /**

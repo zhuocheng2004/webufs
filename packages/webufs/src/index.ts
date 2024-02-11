@@ -1,12 +1,14 @@
 
 import { 
-    Dentry, InodeType, Inode, SeekType,
+    Dentry, InodeType, Inode, 
+    SeekType, StatConst, KStat,
     FileSystemType, Mount
 } from './fs'
 import { VFS, LookupType } from './VFS'
 import {
     Context, FileDescriptor, 
-    DirEntry, DirEntryType
+    DirEntry, DirEntryType,
+    Stat
 } from './Context'
 import { InMemoryFSType, InMemoryFS } from './memory'
 
@@ -43,12 +45,14 @@ const debug = {
 }
 
 export {
-    Dentry, InodeType, Inode, SeekType,
+    Dentry, InodeType, Inode, 
+    SeekType, StatConst, KStat,
     FileSystemType, Mount,
     LookupType,
     VFS, defaultVFS, 
     Context, createDefaultContext, FileDescriptor,
     DirEntry, DirEntryType,
+    Stat,
 
     // default FS implementations
     InMemoryFSType, InMemoryFS,

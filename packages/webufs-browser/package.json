@@ -1,6 +1,6 @@
 {
   "name": "@webufs/webufs-browser",
-  "version": "0.0.6",
+  "version": "0.0.8",
   "description": "webufs browser-side usable script build",
   "keywords": [
     "browser", "filesystem", "fs", "web"
@@ -24,12 +24,9 @@
     "build": "rollup -c",
     "test": ""
   },
-  "devDependencies": {
-    "@rollup/plugin-terser": "^0.4.4"
-  },
   "dependencies": {
-    "@webufs/webufs": "^0.0.12",
-    "@webufs/webufs-idb": "^0.0.7"
+    "@webufs/webufs": "^0.0.13",
+    "@webufs/webufs-idb": "^0.0.8"
   }
 }
 

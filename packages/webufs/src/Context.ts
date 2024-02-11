@@ -1,7 +1,10 @@
 
-import { Dentry, FileOperations, Inode, InodeType, SeekType, VFile } from "./fs"
+import { Dentry, FileOperations, Inode, InodeType, KStat, SeekType, StatConst, VFile } from "./fs"
 import { LookupType, VFS } from "./VFS"
 
+/**
+ * Flag object when openning a file/dir
+ */
 export type OpenFlag = {
     /**
      * Create regular file if not exist.
@@ -14,7 +17,7 @@ export type OpenFlag = {
     excl ?: boolean,
 
     /**
-     * only read, no writing
+     * only read, no writing (not implemented yet)
      */
     rdonly ?: boolean,
 
@@ -24,6 +27,9 @@ export type OpenFlag = {
     directory ?: boolean,
 }
 
+/**
+ * The type code used in @see DirEntry
+ */
 export enum DirEntryType {
     DT_BLK,
     DT_CHR,
@@ -35,6 +41,9 @@ export enum DirEntryType {
     DT_UNKNOWN,
 } 
 
+/**
+ * Result type of @see FileDescriptor.getdents
+ */
 export class DirEntry {
     name: string
     type: DirEntryType
@@ -45,9 +54,33 @@ export class DirEntry {
     }
 }
 
+/**
+ * Information of a file
+ */
+export class Stat {
+    /** inode number */
+    ino: number
+
+    /** file mode */
+    mode: number
+
+    /** file size */
+    size: number
+
+    constructor(ino: number, mode: number, size: number) {
+        this.ino = ino
+        this.mode = mode
+        this.size = size
+    }
+}
+
+
+/**
+ * A file descriptor is the handle for an opened file.
+ */
 export class FileDescriptor {
-    file: VFile
-    op: FileOperations
+    private file: VFile
+    private op: FileOperations
 
     constructor(file: VFile) {
         this.file = file
@@ -58,12 +91,20 @@ export class FileDescriptor {
     }
 
     /**
-     * Close an opened file. This will flush all pending operations.
+     * Close an opened file.
+     * This will flush all pending operations and release resources.
      */
     async close() {
-        await this.op?.flush()
+        await this.op.flush()
+        await this.op.release()
+        this.file.inode.put()
     }
 
+    /**
+     * Seek read/write relative position
+     * @param offset seek offset
+     * @param rel seek type
+     */
     async seek(offset: number, rel: SeekType) {
         await this.op.llseek(this.file, offset, rel)
     }
@@ -96,6 +137,10 @@ export class FileDescriptor {
         await this.op.write(this.file, src, size)
     }
 
+    /**
+     * get dir entries inside a dir
+     * @returns an array of entries
+     */
     async getdents(): Promise<Array<DirEntry>> {
         if (!this.file.inode.dentry) {
             throw Error('flying inode')
@@ -135,9 +180,9 @@ export class FileDescriptor {
  * It keeps tracks of pwd etc.
  */
 export class Context {
-    vfs: VFS
-    root: Dentry
-    pwd: Dentry
+    private vfs: VFS
+    private root: Dentry
+    private pwd: Dentry
 
     constructor(vfs: VFS) {
         this.vfs = vfs
@@ -169,7 +214,7 @@ export class Context {
             if (!dentry.inode || dentry.inode.type !== InodeType.DIR) throw Error('not a directory')
             this.pwd = dentry
         } catch (error) {
-            throw Error(`Cannot chdir to ${path}: ${error}`)
+            throw Error(`cannot chdir to "${path}": ${error}`)
         }
     }
 
@@ -183,7 +228,7 @@ export class Context {
             if (!dentry.inode || dentry.inode.type !== InodeType.DIR) throw Error('not a directory')
             this.root = dentry
         } catch (error) {
-            throw Error(`Cannot chroot to ${path}: ${error}`)
+            throw Error(`cannot chroot to "${path}": ${error}`)
         }
     }
 
@@ -214,7 +259,7 @@ export class Context {
     }
 
     /**
-     * get a current working directory as a string
+     * get the current working directory as a string
      * @returns the pwd
      */
     getcwd(): string {
@@ -239,16 +284,17 @@ export class Context {
             if (!dentry.mount) {
                 throw Error('negative dentry')
             }
-            dentry.inode = await dentry.mount.op.mkInode(InodeType.DIR)
-
-            dentry.parent.children.push(dentry)
+            let inode = await dentry.mount.op.mkInode(InodeType.DIR)
+            dentry.inode = inode
+            await inode.inode_op.mkdir(dentry)
         } catch (error) {
-            throw Error(`cannot mkdir ${path}: ${error}`)
+            throw Error(`cannot mkdir "${path}": ${error}`)
         }
     }
 
     /**
      * Remove an existing directory.
+     * The directory should be empty.
      * 
      * @param path directory path
      */
@@ -256,15 +302,22 @@ export class Context {
         try {
             let dentry = await this.lookup(path, LookupType.NORMAL)
             if (dentry.inode) {
-                dentry.inode.inode_op.rmdir(dentry)
+                await dentry.inode.inode_op.rmdir(dentry)
             } else {
                 dentry.parent.remove(dentry)
+                throw Error('not found')
             }
         } catch (error) {
-            throw Error(`cannot rmdir ${path}: ${error}`)
+            throw Error(`cannot rmdir "${path}": ${error}`)
         }
     }
 
+    /**
+     * Open a file/directory
+     * @param path path to the file
+     * @param flags open flag.
+     * @returns 
+     */
     async open(path: string, flags?: OpenFlag): Promise<FileDescriptor> {
         //console.log(`open: ${path} with flags ${flags}`)
 
@@ -306,9 +359,55 @@ export class Context {
                 await inode.file_op.open(file)
             }
 
+            inode.get()
+
             return new FileDescriptor(file)
         } catch (error) {
-            throw Error(`cannot open ${path}: ${error}`)
+            throw Error(`cannot open "${path}": ${error}`)
+        }
+    }
+
+    /**
+     * Unlink a file.
+     * Cannot unlink directory.
+     */
+    async unlink(path: string) {
+        try {
+            let dentry = await this.lookup(path, LookupType.NORMAL)
+            if (dentry.inode) {
+                if (dentry.inode.type === InodeType.DIR) throw Error('is directory')
+                await dentry.inode.inode_op.unlink(dentry)
+            } else {
+                throw Error('not found')
+            }
+        } catch (error) {
+            throw Error(`cannot unlink "${path}": ${error}`)
+        }
+    }
+
+    /**
+     * Get information about a file
+     * @param filename filename
+     * @returns
+     */
+    async stat(filename: string): Promise<Stat> {
+        try {
+            let dentry = await this.lookup(filename, LookupType.NORMAL)
+            if (!dentry.inode) throw Error('negative dentry')
+            let inode = dentry.inode
+            let mode = 0
+            switch (inode.type) {
+                case InodeType.SYMLINK:
+                    mode |= StatConst.IFLNK; break
+                case InodeType.REG:
+                    mode |= StatConst.IFREG; break
+                case InodeType.DIR:
+                    mode |= StatConst.IFDIR; break
+            }
+
+            return new Stat(0, mode, inode.size)
+        } catch (error) {
+            throw Error(`cannot stat "${filename}": ${error}`)
         }
     }
 }
