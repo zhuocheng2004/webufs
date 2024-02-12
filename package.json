@@ -12,7 +12,7 @@
     "packages/**"
   ],
   "scripts": {
-    "prepare": "./prepare_husky.sh || true",
+    "prepare": "sh ./prepare_husky.sh || true",
     "build": "lerna run build",
     "test": "lerna run test",
     "lint": "lerna run lint",
