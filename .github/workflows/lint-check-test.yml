@@ -14,7 +14,7 @@ jobs:
               with:
                 node-version: '20'
             - name: Prepare
-              run: npm install
+              run: npm install -g pnpm && npm install
             - name: Prettier Check
               run: npm run prettier
             - name: Lint Check
