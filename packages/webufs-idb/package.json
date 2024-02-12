@@ -1,31 +1,36 @@
 {
-  "name": "@webufs/webufs-idb",
-  "version": "0.0.8",
-  "description": "IndexedDB implementation of webufs API",
-  "keywords": [
-    "indexeddb", "idb", "idbfs", "filesystem", "fs", "web"
-  ],
-  "author": "parabola2004 <zhuocheng2004@gmail.com> (http://parabola2004.eastasia.cloudapp.azure.com/)",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/zhuocheng2004/webufs.git",
-    "directory": "packages/webufs-idb"
-  },
-  "type": "module",
-  "main": "build/index.js",
-  "types": "build/index.d.ts",
-  "files": [
-    "./build/*.js",
-    "./build/*.map",
-    "./build/*.d.ts"
-  ],
-  "scripts": {
-    "build": "rollup -c",
-    "lint": "eslint --ext .js,.ts src/**",
-    "prettier": "prettier --check src"
-  },
-  "dependencies": {
-    "@webufs/webufs": "^0.0.13"
-  }
+    "name": "@webufs/webufs-idb",
+    "version": "0.0.9",
+    "description": "IndexedDB implementation of webufs API",
+    "keywords": [
+        "indexeddb",
+        "idb",
+        "idbfs",
+        "filesystem",
+        "fs",
+        "web"
+    ],
+    "author": "parabola2004 <zhuocheng2004@gmail.com> (http://parabola2004.eastasia.cloudapp.azure.com/)",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/zhuocheng2004/webufs.git",
+        "directory": "packages/webufs-idb"
+    },
+    "type": "module",
+    "main": "build/index.js",
+    "types": "build/index.d.ts",
+    "files": [
+        "./build/*.js",
+        "./build/*.map",
+        "./build/*.d.ts"
+    ],
+    "scripts": {
+        "build": "rollup -c",
+        "lint": "eslint --ext .js,.ts src/**",
+        "prettier": "prettier --check src"
+    },
+    "dependencies": {
+        "@webufs/webufs": "^0.0.14"
+    }
 }

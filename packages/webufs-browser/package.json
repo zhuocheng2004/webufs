@@ -1,36 +1,38 @@
 {
-  "name": "@webufs/webufs-browser",
-  "version": "0.0.8",
-  "description": "webufs browser-side usable script build",
-  "keywords": [
-    "browser", "filesystem", "fs", "web"
-  ],
-  "author": "parabola2004 <zhuocheng2004@gmail.com> (http://parabola2004.eastasia.cloudapp.azure.com/)",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/zhuocheng2004/webufs.git",
-    "directory": "packages/webufs-browser"
-  },
-  "type": "module",
-  "main": "build/index.js",
-  "types": "build/index.d.ts",
-  "files": [
-    "./build/*.js",
-    "./build/*.map",
-    "./build/*.d.ts"
-  ],
-  "scripts": {
-    "build": "rollup -c",
-    "lint": "eslint --ext .js,.ts src/**",
-    "prettier": "prettier --check src"
-  },
-  "devDependencies": {
-    "@rollup/plugin-terser": "^0.4.4"
-  },
-  "dependencies": {
-    "@webufs/webufs": "^0.0.13",
-    "@webufs/webufs-idb": "^0.0.8"
-  }
+    "name": "@webufs/webufs-browser",
+    "version": "0.0.9",
+    "description": "webufs browser-side usable script build",
+    "keywords": [
+        "browser",
+        "filesystem",
+        "fs",
+        "web"
+    ],
+    "author": "parabola2004 <zhuocheng2004@gmail.com> (http://parabola2004.eastasia.cloudapp.azure.com/)",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/zhuocheng2004/webufs.git",
+        "directory": "packages/webufs-browser"
+    },
+    "type": "module",
+    "main": "build/index.js",
+    "types": "build/index.d.ts",
+    "files": [
+        "./build/*.js",
+        "./build/*.map",
+        "./build/*.d.ts"
+    ],
+    "scripts": {
+        "build": "rollup -c",
+        "lint": "eslint --ext .js,.ts src/**",
+        "prettier": "prettier --check src"
+    },
+    "devDependencies": {
+        "@rollup/plugin-terser": "^0.4.4"
+    },
+    "dependencies": {
+        "@webufs/webufs": "^0.0.14",
+        "@webufs/webufs-idb": "^0.0.9"
+    }
 }
-

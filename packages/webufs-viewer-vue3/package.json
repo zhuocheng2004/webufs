@@ -1,43 +1,43 @@
 {
-  "name": "@webufs/webufs-viewer-vue3",
-  "version": "0.0.8",
-  "description": "A Vue3 Component for viewing webufs file system",
-  "keywords": [
-    "vue",
-    "vue3",
-    "viewer",
-    "filesystem",
-    "fs",
-    "web"
-  ],
-  "author": "parabola2004 <zhuocheng2004@gmail.com> (http://parabola2004.eastasia.cloudapp.azure.com/)",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/zhuocheng2004/webufs.git",
-    "directory": "packages/webufs-viewer-vue3"
-  },
-  "type": "module",
-  "main": "build/index.js",
-  "types": "build/index.d.ts",
-  "files": [
-    "./build/*.js",
-    "./build/*.map",
-    "./build/*.d.ts"
-  ],
-  "scripts": {
-    "build": "rollup -c",
-    "lint": "eslint --ext .js,.ts,.vue src/**",
-    "prettier": "prettier --check src"
-  },
-  "devDependencies": {
-    "eslint-plugin-vue": "^9.21.1",
-    "rollup-plugin-vue": "^6.0.0"
-  },
-  "dependencies": {
-    "@webufs/webufs": "^0.0.13"
-  },
-  "peerDependencies": {
-    "vue": "^3.4.15"
-  }
+    "name": "@webufs/webufs-viewer-vue3",
+    "version": "0.0.9",
+    "description": "A Vue3 Component for viewing webufs file system",
+    "keywords": [
+        "vue",
+        "vue3",
+        "viewer",
+        "filesystem",
+        "fs",
+        "web"
+    ],
+    "author": "parabola2004 <zhuocheng2004@gmail.com> (http://parabola2004.eastasia.cloudapp.azure.com/)",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/zhuocheng2004/webufs.git",
+        "directory": "packages/webufs-viewer-vue3"
+    },
+    "type": "module",
+    "main": "build/index.js",
+    "types": "build/index.d.ts",
+    "files": [
+        "./build/*.js",
+        "./build/*.map",
+        "./build/*.d.ts"
+    ],
+    "scripts": {
+        "build": "rollup -c",
+        "lint": "eslint --ext .js,.ts,.vue src/**",
+        "prettier": "prettier --check src"
+    },
+    "devDependencies": {
+        "eslint-plugin-vue": "^9.21.1",
+        "rollup-plugin-vue": "^6.0.0"
+    },
+    "dependencies": {
+        "@webufs/webufs": "^0.0.14"
+    },
+    "peerDependencies": {
+        "vue": "^3.4.15"
+    }
 }
