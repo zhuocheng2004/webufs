@@ -12,7 +12,7 @@
     "packages/**"
   ],
   "scripts": {
-    "prepare": "husky",
+    "prepare": "./prepare_husky.sh || true",
     "build": "lerna run build",
     "test": "lerna run test",
     "lint": "lerna run lint",
@@ -36,10 +36,5 @@
   },
   "publishConfig": {
     "access": "public"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": ""
-    }
   }
 }
