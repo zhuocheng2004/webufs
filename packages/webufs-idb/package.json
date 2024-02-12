@@ -1,6 +1,6 @@
 {
     "name": "@webufs/webufs-idb",
-    "version": "0.0.9",
+    "version": "0.0.10",
     "description": "IndexedDB implementation of webufs API",
     "keywords": [
         "indexeddb",
@@ -31,6 +31,6 @@
         "prettier": "prettier --check src"
     },
     "dependencies": {
-        "@webufs/webufs": "^0.0.14"
+        "@webufs/webufs": "^0.0.15"
     }
 }

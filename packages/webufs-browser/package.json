@@ -1,6 +1,6 @@
 {
     "name": "@webufs/webufs-browser",
-    "version": "0.0.9",
+    "version": "0.0.10",
     "description": "webufs browser-side usable script build",
     "keywords": [
         "browser",
@@ -32,7 +32,7 @@
         "@rollup/plugin-terser": "^0.4.4"
     },
     "dependencies": {
-        "@webufs/webufs": "^0.0.14",
-        "@webufs/webufs-idb": "^0.0.9"
+        "@webufs/webufs": "^0.0.15",
+        "@webufs/webufs-idb": "^0.0.10"
     }
 }

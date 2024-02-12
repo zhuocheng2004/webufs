@@ -49,10 +49,10 @@ importers:
     packages/webufs-browser:
         dependencies:
             '@webufs/webufs':
-                specifier: ^0.0.14
+                specifier: ^0.0.15
                 version: link:../webufs
             '@webufs/webufs-idb':
-                specifier: ^0.0.9
+                specifier: ^0.0.10
                 version: link:../webufs-idb
         devDependencies:
             '@rollup/plugin-terser':
@@ -62,13 +62,13 @@ importers:
     packages/webufs-idb:
         dependencies:
             '@webufs/webufs':
-                specifier: ^0.0.14
+                specifier: ^0.0.15
                 version: link:../webufs
 
     packages/webufs-viewer-vue3:
         dependencies:
             '@webufs/webufs':
-                specifier: ^0.0.14
+                specifier: ^0.0.15
                 version: link:../webufs
             vue:
                 specifier: ^3.4.15
