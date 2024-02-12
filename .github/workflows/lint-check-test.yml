@@ -1,7 +1,5 @@
 name: GitHub Actions for Lint Checking and Testing
-run-name: GitHub Actions run by ${{ github.actor }} 
-env:
-    HUSKY: 0
+run-name: GitHub Actions run by ${{ github.actor }}
 on: [push]
 jobs:
     Lint-Checking-Testing:
@@ -13,8 +11,10 @@ jobs:
               uses: actions/setup-node@v3
               with:
                 node-version: '20'
+            - name: Setup PNPM
+              uses: pnpm/action-setup@v2
             - name: Prepare
-              run: npm install -g pnpm && npm install
+              run: pnpm install
             - name: Prettier Check
               run: npm run prettier
             - name: Lint Check
