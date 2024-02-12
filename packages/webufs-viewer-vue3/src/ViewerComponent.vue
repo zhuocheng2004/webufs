@@ -7,6 +7,7 @@ class Item {
     name: string
     mode: number
     size: number
+    index: number = 0
     selected: boolean = false
 
     constructor(name: string, mode: number, size: number) {
@@ -17,14 +18,15 @@ class Item {
 }
 
 export default defineComponent({
+    emits: ['init', 'error'],
     data() {
         return {
             dentryTypeNames: dentryTypeNames,
-            context: null as null|Context,
+            context: null as null | Context,
             pwd: '',
-            items: new Array() as Array<Item>,
-            selectedFiles: null as null|FileList,
-            allSelect: false
+            items: [] as Array<Item>,
+            selectedFiles: null as null | FileList,
+            allSelect: false,
         }
     },
     async created() {
@@ -42,14 +44,14 @@ export default defineComponent({
         },
         async updateItems() {
             if (!this.context) {
-                this.items = new Array()
+                this.items = []
                 return
             }
-            
+
             try {
                 let fd = await this.context.open('.', { directory: true })
                 let infos = await fd.getdents()
-                let list = new Array()
+                let list = []
                 for (let info of infos) {
                     const stat = await this.context.stat(info.name)
                     list.push(new Item(info.name, stat.mode, stat.size))
@@ -137,12 +139,14 @@ export default defineComponent({
             if (!this.selectedFiles) return
             for (let file of this.selectedFiles) {
                 try {
-                    const stat = await this.context.stat(file.name)
+                    await this.context.stat(file.name)
                     this.$emit('error', new Error(`cannot upload file "${file.name}": already exists`))
                     continue
-                } catch (e) { }
+                } catch (e) {
+                    /* empty */
+                }
                 const reader = new FileReader()
-                reader.onload = async ev => {
+                reader.onload = async (ev) => {
                     if (!this.context) return
                     if (!ev.target) return
                     try {
@@ -188,7 +192,7 @@ export default defineComponent({
                 }
             }
             await this.update()
-        }
+        },
     },
 })
 </script>
@@ -202,11 +206,11 @@ export default defineComponent({
             <h2>{{ pwd }}</h2>
         </div>
         <div>
-            <button style="margin-left: 0.8em;" @click="update()">Refresh</button>
-            <button style="margin-left: 0.8em;" @click="chdir('..')">Go to Parent</button>
+            <button style="margin-left: 0.8em" @click="update()">Refresh</button>
+            <button style="margin-left: 0.8em" @click="chdir('..')">Go to Parent</button>
             <span v-if="items.reduce((prev, curr) => prev || curr.selected, false) /* any one selected */">
-                <button style="margin-left: 0.8em;" @click="unlinkSelected">unlink</button>
-                <button style="margin-left: 0.8em;" @click="rmdirSelected">rmdir</button>
+                <button style="margin-left: 0.8em" @click="unlinkSelected">unlink</button>
+                <button style="margin-left: 0.8em" @click="rmdirSelected">rmdir</button>
                 <!-- <button style="margin-left: 0.8em;">Delete Recursively</button> -->
             </span>
         </div>
@@ -215,7 +219,15 @@ export default defineComponent({
                 <thead>
                     <tr>
                         <th width="3%">
-                            <input v-model="allSelect" type="checkbox" @change="items.map(item => { item.selected = allSelect })">
+                            <input
+                                v-model="allSelect"
+                                type="checkbox"
+                                @change="
+                                    items.map((item) => {
+                                        item.selected = allSelect
+                                    })
+                                "
+                            />
                         </th>
                         <th width="3%"></th>
                         <th width="5%"></th>
@@ -225,28 +237,33 @@ export default defineComponent({
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="entry in items">
+                    <tr v-for="entry in items" :key="entry.index">
                         <td>
-                            <input v-model="entry.selected" type="checkbox" @change="allSelect = items.reduce((prev, curr) => prev && curr.selected, true)">
+                            <input
+                                v-model="entry.selected"
+                                type="checkbox"
+                                @change="allSelect = items.reduce((prev, curr) => prev && curr.selected, true)"
+                            />
                         </td>
                         <th width="3%"></th>
                         <th width="5%"></th>
-                        <td><a href="javascript:void(0);" @click="itemOnClick(entry.name)">{{ displayName(entry) }}</a></td>
+                        <td>
+                            <a href="javascript:void(0);" @click="itemOnClick(entry.name)">{{ displayName(entry) }}</a>
+                        </td>
                         <td>{{ entry.size }}</td>
                         <td>0</td>
                     </tr>
                 </tbody>
             </table>
         </div>
-        <hr/>
+        <hr />
         <div>
             <div>
-                <span></span>
                 <button @click="mkdirOnClick">mkdir</button>
             </div>
             <div>
                 <span>Choose File: </span>
-                <input id="input" type="file" @change="uploadOnChange"/>
+                <input id="input" type="file" @change="uploadOnChange" />
                 <button @click="uploadFiles">Upload</button>
             </div>
         </div>

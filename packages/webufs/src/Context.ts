@@ -1,6 +1,5 @@
-
-import { Dentry, FileOperations, Inode, InodeType, KStat, SeekType, StatConst, VFile } from "./fs"
-import { LookupType, VFS } from "./VFS"
+import { Dentry, FileOperations, Inode, InodeType, SeekType, StatConst, VFile } from './fs'
+import { LookupType, VFS } from './VFS'
 
 /**
  * Flag object when openning a file/dir
@@ -9,22 +8,22 @@ export type OpenFlag = {
     /**
      * Create regular file if not exist.
      */
-    create ?: boolean
+    create?: boolean
 
     /**
      * Used together with CREATE. Throw error when file exists
      */
-    excl ?: boolean,
+    excl?: boolean
 
     /**
      * only read, no writing (not implemented yet)
      */
-    rdonly ?: boolean,
+    rdonly?: boolean
 
     /**
      * We are going to open a directory
      */
-    directory ?: boolean,
+    directory?: boolean
 }
 
 /**
@@ -33,13 +32,13 @@ export type OpenFlag = {
 export enum DirEntryType {
     DT_BLK,
     DT_CHR,
-    DT_DIR,     // directory
+    DT_DIR, // directory
     DT_FIFO,
-    DT_LNK,     // symbolic link
-    DT_REG,     // regular file
+    DT_LNK, // symbolic link
+    DT_REG, // regular file
     DT_SOCK,
     DT_UNKNOWN,
-} 
+}
 
 /**
  * Result type of @see FileDescriptor.getdents
@@ -73,7 +72,6 @@ export class Stat {
         this.size = size
     }
 }
-
 
 /**
  * A file descriptor is the handle for an opened file.
@@ -145,11 +143,11 @@ export class FileDescriptor {
         if (!this.file.inode.dentry) {
             throw Error('flying inode')
         }
-        let base = this.file.inode.dentry
+        const base = this.file.inode.dentry
 
-        let list = new Array<DirEntry>()
+        const list = new Array<DirEntry>()
         await this.op.iterate(this.file, async (name) => {
-            let dentry = await this.file.inode.inode_op.lookup(base, name)
+            const dentry = await this.file.inode.inode_op.lookup(base, name)
             if (dentry && dentry.inode) {
                 let type: DirEntryType
                 switch (dentry.inode.type) {
@@ -165,7 +163,7 @@ export class FileDescriptor {
                     default:
                         type = DirEntryType.DT_UNKNOWN
                 }
-                let dirent = new DirEntry(name, type)
+                const dirent = new DirEntry(name, type)
                 list.push(dirent)
             } else {
                 console.warn('iterate() provided non-exist file or negative dentry')
@@ -199,7 +197,7 @@ export class Context {
     private async lookup(path: string, lookupType: LookupType): Promise<Dentry> {
         if (path.length === 0) return this.pwd
 
-        let start = path.charAt(0) === '/' ? this.root : this.pwd
+        const start = path.charAt(0) === '/' ? this.root : this.pwd
 
         return await this.vfs.pathLookup(path, start, this.root, lookupType)
     }
@@ -210,7 +208,7 @@ export class Context {
      */
     async chdir(path: string): Promise<void> {
         try {
-            let dentry = await this.lookup(path, LookupType.NORMAL)
+            const dentry = await this.lookup(path, LookupType.NORMAL)
             if (!dentry.inode || dentry.inode.type !== InodeType.DIR) throw Error('not a directory')
             this.pwd = dentry
         } catch (error) {
@@ -224,7 +222,7 @@ export class Context {
      */
     async chroot(path: string): Promise<void> {
         try {
-            let dentry = await this.lookup(path, LookupType.NORMAL)
+            const dentry = await this.lookup(path, LookupType.NORMAL)
             if (!dentry.inode || dentry.inode.type !== InodeType.DIR) throw Error('not a directory')
             this.root = dentry
         } catch (error) {
@@ -237,7 +235,7 @@ export class Context {
      * @param fsName the first fs
      */
     async mountInit(fsName: string): Promise<void> {
-        let fsType = this.vfs.getFSType(fsName)
+        const fsType = this.vfs.getFSType(fsName)
         this.root.mount = await fsType.mount(this.root)
         this.root.inode = await this.root.mount.op.mkInode(InodeType.DIR)
         this.pwd.mount = await fsType.mount(this.pwd)
@@ -250,8 +248,8 @@ export class Context {
      * @param path mount point
      */
     async mount(fsName: string, path: string) {
-        let fsType = this.vfs.getFSType(fsName)
-        let dentry = await this.lookup(path, LookupType.NORMAL)
+        const fsType = this.vfs.getFSType(fsName)
+        const dentry = await this.lookup(path, LookupType.NORMAL)
         // the dentry must be an empty dir
         if (!dentry.inode || dentry.inode.type !== InodeType.DIR) throw Error('not a directory')
         if (!dentry.isEmpty()) throw Error('directory not empty')
@@ -277,14 +275,14 @@ export class Context {
      */
     async mkdir(path: string) {
         try {
-            let dentry = await this.lookup(path, LookupType.EXCEPT_LAST)
+            const dentry = await this.lookup(path, LookupType.EXCEPT_LAST)
             if (dentry.inode) {
                 throw Error(`file exists`)
             }
             if (!dentry.mount) {
                 throw Error('negative dentry')
             }
-            let inode = await dentry.mount.op.mkInode(InodeType.DIR)
+            const inode = await dentry.mount.op.mkInode(InodeType.DIR)
             dentry.inode = inode
             await inode.inode_op.mkdir(dentry)
         } catch (error) {
@@ -295,12 +293,12 @@ export class Context {
     /**
      * Remove an existing directory.
      * The directory should be empty.
-     * 
+     *
      * @param path directory path
      */
     async rmdir(path: string) {
         try {
-            let dentry = await this.lookup(path, LookupType.NORMAL)
+            const dentry = await this.lookup(path, LookupType.NORMAL)
             if (dentry.inode) {
                 await dentry.inode.inode_op.rmdir(dentry)
             } else {
@@ -316,7 +314,7 @@ export class Context {
      * Open a file/directory
      * @param path path to the file
      * @param flags open flag.
-     * @returns 
+     * @returns
      */
     async open(path: string, flags?: OpenFlag): Promise<FileDescriptor> {
         //console.log(`open: ${path} with flags ${flags}`)
@@ -324,18 +322,20 @@ export class Context {
         if (!flags) flags = {}
 
         try {
-            let dentry = await this.lookup(path, LookupType.EXCEPT_LAST)
+            const dentry = await this.lookup(path, LookupType.EXCEPT_LAST)
             if (!dentry.mount) {
                 throw Error('negative dentry')
             }
 
             let inode: Inode
-            if (dentry.inode) {     // positive dentry: file exist
+            if (dentry.inode) {
+                // positive dentry: file exist
                 if (flags.create && flags.excl) {
                     throw Error('file exists')
                 }
                 inode = dentry.inode
-            } else {                // negative dentry: file doesn't exist
+            } else {
+                // negative dentry: file doesn't exist
                 if (!flags.create) {
                     throw Error('file does not exist')
                 }
@@ -349,13 +349,13 @@ export class Context {
 
             inode.dentry = dentry
 
-            let file = await dentry.mount.op.mkVFile(inode)
+            const file = await dentry.mount.op.mkVFile(inode)
 
             if (!flags.directory) {
                 if (!inode.file_op) {
                     throw Error('file operations not available')
                 }
-    
+
                 await inode.file_op.open(file)
             }
 
@@ -373,7 +373,7 @@ export class Context {
      */
     async unlink(path: string) {
         try {
-            let dentry = await this.lookup(path, LookupType.NORMAL)
+            const dentry = await this.lookup(path, LookupType.NORMAL)
             if (dentry.inode) {
                 if (dentry.inode.type === InodeType.DIR) throw Error('is directory')
                 await dentry.inode.inode_op.unlink(dentry)
@@ -392,17 +392,20 @@ export class Context {
      */
     async stat(filename: string): Promise<Stat> {
         try {
-            let dentry = await this.lookup(filename, LookupType.NORMAL)
+            const dentry = await this.lookup(filename, LookupType.NORMAL)
             if (!dentry.inode) throw Error('negative dentry')
-            let inode = dentry.inode
+            const inode = dentry.inode
             let mode = 0
             switch (inode.type) {
                 case InodeType.SYMLINK:
-                    mode |= StatConst.IFLNK; break
+                    mode |= StatConst.IFLNK
+                    break
                 case InodeType.REG:
-                    mode |= StatConst.IFREG; break
+                    mode |= StatConst.IFREG
+                    break
                 case InodeType.DIR:
-                    mode |= StatConst.IFDIR; break
+                    mode |= StatConst.IFDIR
+                    break
             }
 
             return new Stat(0, mode, inode.size)

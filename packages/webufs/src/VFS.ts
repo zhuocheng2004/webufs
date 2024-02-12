@@ -1,5 +1,4 @@
-
-import { Dentry, FileSystemType, InodeType, KStat } from "./fs"
+import { Dentry, FileSystemType, InodeType } from './fs'
 
 /**
  * used in path_lookup
@@ -18,18 +17,18 @@ export class VFS {
     protected fileSystems: FileSystemType[] = []
 
     registerFSType(fsType: FileSystemType) {
-        for (let t of this.fileSystems) {
+        for (const t of this.fileSystems) {
             if (t.name === fsType.name) return
         }
         this.fileSystems.push(fsType)
     }
 
     unregisterFSType(fsType: FileSystemType) {
-        this.fileSystems = this.fileSystems.filter(t => t.name !== fsType.name)
+        this.fileSystems = this.fileSystems.filter((t) => t.name !== fsType.name)
     }
 
     getFSType(name: string): FileSystemType {
-        for (let fs of this.fileSystems) {
+        for (const fs of this.fileSystems) {
             if (fs.name === name) return fs
         }
         throw Error(`file system type "${name}" not found`)
@@ -45,11 +44,11 @@ export class VFS {
      */
     async pathLookup(path: string, start: Dentry, root: Dentry, lookupType: LookupType): Promise<Dentry> {
         let components = path.split('/')
-        components = components.filter(s => s.length > 0)
+        components = components.filter((s) => s.length > 0)
 
         let curDir = start
         for (let i = 0; i < components.length; i++) {
-            let component = components[i]
+            const component = components[i]
             let found: Dentry | null = null
 
             // deal with special cases: '.' and '..'
@@ -63,22 +62,22 @@ export class VFS {
             if (!curDir.inode) {
                 throw Error('negative dentry')
             }
- 
+
             found = await curDir.inode.inode_op.lookup(curDir, component)
-            
+
             if (!found) {
-                if (lookupType === LookupType.EXCEPT_LAST && i === components.length-1) {
+                if (lookupType === LookupType.EXCEPT_LAST && i === components.length - 1) {
                     // create a new dentry
-                    let dentry = new Dentry(component, curDir.mount)
+                    const dentry = new Dentry(component, curDir.mount)
                     dentry.parent = curDir
                     return dentry
                 }
-                throw Error('path lookup: file doesn\'t exist')
+                throw Error("path lookup: file doesn't exist")
             } else {
                 if (!found.inode) {
                     throw Error('negative inode')
                 }
-                if (i !== components.length-1) {
+                if (i !== components.length - 1) {
                     // non-last component needs to be a dir
                     if (found.inode.type !== InodeType.DIR) {
                         throw Error('not a directory')

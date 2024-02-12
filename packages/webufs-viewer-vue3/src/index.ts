@@ -1,7 +1,4 @@
+import ViewerComponentVue from './ViewerComponent.vue'
+import { WebufsPlugin } from './Plugin'
 
-import Viewer from "./Viewer.vue"
-import { WebufsPlugin } from "./Plugin"
-
-export {
-    Viewer as WebufsViewer, WebufsPlugin
-}
+export { ViewerComponentVue as WebufsViewer, WebufsPlugin }

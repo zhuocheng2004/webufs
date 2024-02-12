@@ -1,4 +1,3 @@
-
 /**
  * A dentry holds the name of a file/dir.
  */
@@ -44,7 +43,7 @@ export class Dentry {
      * @returns created dentry
      */
     static getRoot(): Dentry {
-        let dentry = new Dentry('/', undefined)
+        const dentry = new Dentry('/', undefined)
         dentry.parent = dentry
         return dentry
     }
@@ -62,7 +61,7 @@ export class Dentry {
      * @param child dentry to remove
      */
     remove(child: Dentry) {
-        this.children = this.children.filter(d => d !== child)
+        this.children = this.children.filter((d) => d !== child)
     }
 }
 
@@ -70,14 +69,14 @@ export class Dentry {
  * The type of an inode
  */
 export enum InodeType {
-    REG,    // regular
-    DIR,    // directory
-    SYMLINK // symbolic link
+    REG, // regular
+    DIR, // directory
+    SYMLINK, // symbolic link
 }
 
 /**
  * An inode is a holder of a real file/directory.
- * Inode could be attached to a dentry, but 
+ * Inode could be attached to a dentry, but
  * it can also be used on its own.
  */
 export class Inode {
@@ -131,28 +130,26 @@ export class VFile {
     }
 }
 
-
 export enum SeekType {
-    SET,    // from the beginning of file
-    CUR,    // from current position
-    END,    // from the end of file
+    SET, // from the beginning of file
+    CUR, // from current position
+    END, // from the end of file
 }
 
 export type IterateCallback = (name: string) => Promise<void>
 
-
 export enum StatConst {
-    IFMT   = 0o0170000,
-    IFSOCK =  0o140000,
-    IFLNK  =  0o120000,
-    IFREG  =  0o100000,
-    IFBLK  =  0o060000,
-    IFDIR  =  0o040000,
-    IFCHR  =  0o020000,
-    IFIFO  =  0o010000,
-    ISUID  =  0o004000,
-    ISGID  =  0o002000,
-    ISVTX  =  0o001000,
+    IFMT = 0o0170000,
+    IFSOCK = 0o140000,
+    IFLNK = 0o120000,
+    IFREG = 0o100000,
+    IFBLK = 0o060000,
+    IFDIR = 0o040000,
+    IFCHR = 0o020000,
+    IFIFO = 0o010000,
+    ISUID = 0o004000,
+    ISGID = 0o002000,
+    ISVTX = 0o001000,
 }
 
 export class KStat {
@@ -167,7 +164,6 @@ export class KStat {
 
     /** inode number of file */
     ino: number = 0
-
 
     constructor(result_mask: number, mode: number) {
         this.result_mask = result_mask
@@ -196,19 +192,19 @@ export interface FileOperations {
 export interface InodeOperations {
     /**
      * Called when looking up a dentry
-     * 
+     *
      * Not in-memory fs should instantiate dentries/inodes when looking up.
-     * 
+     *
      * @param base base dentry
      * @param childName child dentry name
      * @returns child dentry if it exists; null if does't exist
      */
-    lookup: (base: Dentry, childName: string) => Promise<Dentry|null>
+    lookup: (base: Dentry, childName: string) => Promise<Dentry | null>
 
     /**
      * Called when creating regular files.
      * @param inode the inode to be associated to the dentry
-     * @param dentry a negative dentry where the file will be 
+     * @param dentry a negative dentry where the file will be
      * created on
      * @returns
      */
@@ -217,7 +213,7 @@ export interface InodeOperations {
     /**
      * Called when creating hard links.
      * @param dir base dir
-     * @param old_dentry the old dentry to be linked 
+     * @param old_dentry the old dentry to be linked
      * @param new_dentry the placed to create hard link
      * @returns void
      */
@@ -235,7 +231,7 @@ export interface InodeOperations {
      * @param dir: base dir
      * @param dentry the dentry to be pointed to
      * @param sym the symlink content
-     * @returns 
+     * @returns
      */
     symlink: (dir: Dentry, dentry: Dentry, sym: string) => Promise<void>
 
@@ -260,18 +256,18 @@ export interface InodeOperations {
      * @param dev device id
      * @returns void
      */
-    mknod: (dir: Inode, dentry: Dentry, dev: any) => Promise<void>
+    mknod: (dir: Inode, dentry: Dentry, dev: unknown) => Promise<void>
 
     /**
      * Called when renaming a file/dir
-     * @param old_dir 
-     * @param old_dentry 
-     * @param new_dir 
-     * @param new_dentry 
-     * @returns 
+     * @param old_dir
+     * @param old_dentry
+     * @param new_dir
+     * @param new_dentry
+     * @returns
      */
     rename: (old_dir: Inode, old_dentry: Dentry, new_dir: Inode, new_dentry: Dentry) => Promise<void>
-    
+
     /**
      * Called when trying to read where a symbolic link points to
      * @param dir base dir
@@ -307,15 +303,14 @@ export class Mount {
     }
 }
 
-
 /**
  * A FileSystemType stands for a type of fs,
- * not an instance of fs. 
+ * not an instance of fs.
  * It implements necessary functions in order to work.
- * 
+ *
  * For example, the fs type 'idbfs' might have been mounted
- * multiple times with different args referring to 
- * different background databases. 
+ * multiple times with different args referring to
+ * different background databases.
  */
 export abstract class FileSystemType {
     /**

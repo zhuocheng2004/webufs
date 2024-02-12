@@ -17,7 +17,7 @@ export default {
     },
     methods: {
         async onInit(context) {
-			this.context = context
+            this.context = context
             await this.context.mkdir('dir')
         },
         onError(e) {

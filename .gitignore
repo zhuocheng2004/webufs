@@ -9,6 +9,8 @@ package-lock.json
 
 pnpm-lock.yaml
 
+.husky
+
 dist
 
 *.tsbuildinfo

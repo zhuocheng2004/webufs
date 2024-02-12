@@ -1,13 +1,12 @@
-
 /**
  * Byte Buffer that is resizable.
- * 
+ *
  * Implemented using radix-tree
- * 
+ *
  * Feature: Only allocate memory on writing.
  */
 
-import { RadixTree } from "./RadixTree";
+import { RadixTree } from './RadixTree'
 
 export class ResizableBuffer {
     /**
@@ -36,13 +35,13 @@ export class ResizableBuffer {
     }
 
     getBufferIdx(index: number): Uint8Array {
-        let node = this.tree.getLeaf(index)
+        const node = this.tree.getLeaf(index)
 
         let array: Uint8Array
         if (node.data) {
             array = node.data
         } else {
-            array = new Uint8Array(ResizableBuffer.PAGE_SIZE);  // allocate new
+            array = new Uint8Array(ResizableBuffer.PAGE_SIZE) // allocate new
             node.data = array
         }
 
@@ -58,9 +57,9 @@ export class ResizableBuffer {
         let rel = offset & ResizableBuffer.PAGE_MASK
 
         let buffer = this.getBufferIdx(index)
-    
-        let view = new DataView(dest)
-    
+
+        const view = new DataView(dest)
+
         for (let i = 0; i < size; i++) {
             if (rel >= ResizableBuffer.PAGE_SIZE) {
                 rel -= ResizableBuffer.PAGE_SIZE
@@ -75,7 +74,7 @@ export class ResizableBuffer {
     }
 
     write(offset: number, size: number, src: ArrayBuffer) {
-        let view = new DataView(src)
+        const view = new DataView(src)
 
         let index = offset >> ResizableBuffer.PAGE_SHIFT
         let rel = offset & ResizableBuffer.PAGE_MASK

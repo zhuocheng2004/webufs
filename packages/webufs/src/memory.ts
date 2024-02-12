@@ -1,14 +1,25 @@
-
 /**
  * In-memory file system implementation
  * name: "memfs"
- * 
+ *
  * also a toy example
  */
 
-import { Dentry, FileOperations, FileSystemType, Inode, InodeOperations, InodeType, IterateCallback, Mount, SeekType, SuperOperations, VFile } from "./fs"
-import { genericDropInode, simpleCreate, simpleLookup, simpleMkdir, simpleRmdir, simpleUnlink } from "./common"
-import { ResizableBuffer } from "./ResizableBuffer"
+import {
+    Dentry,
+    FileOperations,
+    FileSystemType,
+    Inode,
+    InodeOperations,
+    InodeType,
+    IterateCallback,
+    Mount,
+    SeekType,
+    SuperOperations,
+    VFile,
+} from './fs'
+import { genericDropInode, simpleCreate, simpleLookup, simpleMkdir, simpleRmdir, simpleUnlink } from './common'
+import { ResizableBuffer } from './ResizableBuffer'
 
 class MemFSInode extends Inode {
     data?: ResizableBuffer
@@ -47,7 +58,7 @@ class MemFSError extends Error {
 
 class MemFSTypeError extends MemFSError {
     constructor(msg?: string) {
-        super('not memfs object')
+        super('not memfs object' + appendErrorMsg(msg))
     }
 }
 
@@ -71,7 +82,6 @@ function getAsMemFSFile(file: VFile): MemFSFile {
     return file
 }
 
-
 function mkInode(type: InodeType): Inode {
     switch (type) {
         case InodeType.REG:
@@ -86,34 +96,39 @@ function mkInode(type: InodeType): Inode {
 const memFSInodeOperations: InodeOperations = {
     lookup: simpleLookup,
     create: simpleCreate,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     link: function (dir: Dentry, old_dentry: Dentry, new_dentry: Dentry): Promise<void> {
-        throw new Error("Function not implemented.")
+        throw new Error('Function not implemented.')
     },
     unlink: simpleUnlink,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     symlink: function (dir: Dentry, dentry: Dentry, sym: string): Promise<void> {
-        throw new Error("Function not implemented.")
+        throw new Error('Function not implemented.')
     },
     mkdir: simpleMkdir,
     rmdir: simpleRmdir,
-    mknod: function (dir: Inode, dentry: Dentry, dev: any): Promise<void> {
-        throw new Error("Function not implemented.")
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    mknod: function (dir: Inode, dentry: Dentry, dev: unknown): Promise<void> {
+        throw new Error('Function not implemented.')
     },
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     rename: function (old_dir: Inode, old_dentry: Dentry, new_dir: Inode, new_dentry: Dentry): Promise<void> {
-        throw new Error("Function not implemented.")
+        throw new Error('Function not implemented.')
     },
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     getLink: function (dir: Dentry, inode: Inode): Promise<string> {
-        throw new Error("Function not implemented.")
+        throw new Error('Function not implemented.')
     },
 }
 
 const memFSFileOperations: FileOperations = {
     llseek: async function (file: VFile, offset: number, rel: SeekType): Promise<void> {
-        let f = getAsMemFSFile(file)
-        let inode = getAsMemFSInode(f.inode)
+        const f = getAsMemFSFile(file)
+        const inode = getAsMemFSInode(f.inode)
         if (!inode.data) {
             throw new MemFSError('cannot seek negative inode')
         }
-        let limit = inode.data.limit
+        const limit = inode.data.limit
         let newPos = 0
 
         switch (rel) {
@@ -137,8 +152,8 @@ const memFSFileOperations: FileOperations = {
         f.pos = newPos
     },
     read: async function (file: VFile, dst: ArrayBuffer, size: number): Promise<void> {
-        let f = getAsMemFSFile(file)
-        let inode = getAsMemFSInode(f.inode)
+        const f = getAsMemFSFile(file)
+        const inode = getAsMemFSInode(f.inode)
         if (!inode.data) {
             throw new MemFSError('cannot read negative inode')
         }
@@ -146,8 +161,8 @@ const memFSFileOperations: FileOperations = {
         f.pos += size
     },
     write: async function (file: VFile, src: ArrayBuffer, size: number): Promise<void> {
-        let f = getAsMemFSFile(file)
-        let inode = getAsMemFSInode(f.inode)
+        const f = getAsMemFSFile(file)
+        const inode = getAsMemFSInode(f.inode)
         if (!inode.data) {
             throw new MemFSError('cannot write negative inode')
         }
@@ -155,29 +170,33 @@ const memFSFileOperations: FileOperations = {
         f.pos += size
         inode.updateSize()
     },
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     iterate: function (file: VFile, callback: IterateCallback): Promise<void> {
-        throw new Error("cannot iterate non-directory file")
+        throw new Error('cannot iterate non-directory file')
     },
     open: async function (file: VFile): Promise<VFile> {
-        let inode = getAsMemFSInode(file.inode)
+        const inode = getAsMemFSInode(file.inode)
         if (!inode.data) {
             inode.data = new ResizableBuffer()
         }
         return new MemFSFile(inode)
     },
-    flush: async function (): Promise<void> { },
-    release: async function (): Promise<void> { }
+    flush: async function (): Promise<void> {},
+    release: async function (): Promise<void> {},
 }
 
 const memFSDirFileOperations: FileOperations = {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     llseek: function (file: VFile, offset: number, rel: SeekType): Promise<void> {
-        throw new Error("cannot seek dir")
+        throw new Error('cannot seek dir')
     },
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     read: function (file: VFile, dst: ArrayBuffer, size: number): Promise<void> {
-        throw new Error("cannot read dir")
+        throw new Error('cannot read dir')
     },
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     write: function (file: VFile, src: ArrayBuffer, size: number): Promise<void> {
-        throw new Error("cannot write dir")
+        throw new Error('cannot write dir')
     },
     iterate: async function (file: VFile, callback: IterateCallback) {
         if (file.inode.type !== InodeType.DIR) {
@@ -186,17 +205,17 @@ const memFSDirFileOperations: FileOperations = {
         if (!file.inode.dentry) {
             throw new MemFSError('only files on directory tree can be iterated')
         }
-        let dentry = file.inode.dentry
-        for (let subdir of dentry.children) {
+        const dentry = file.inode.dentry
+        for (const subdir of dentry.children) {
             await callback(subdir.name)
         }
     },
     open: async function (file: VFile): Promise<VFile> {
-        let inode = getAsMemFSInode(file.inode)
+        const inode = getAsMemFSInode(file.inode)
         return new MemFSFile(inode)
     },
-    flush: async function (): Promise<void> { },
-    release: async function (): Promise<void> { }
+    flush: async function (): Promise<void> {},
+    release: async function (): Promise<void> {},
 }
 
 const memFSSuperOperations: SuperOperations = {
@@ -205,11 +224,11 @@ const memFSSuperOperations: SuperOperations = {
     },
 
     mkVFile: async function (inode: Inode): Promise<VFile> {
-        let ino = getAsMemFSInode(inode)
+        const ino = getAsMemFSInode(inode)
         return new MemFSFile(ino)
     },
 
-    dropInode: genericDropInode
+    dropInode: genericDropInode,
 }
 
 /**
@@ -217,7 +236,7 @@ const memFSSuperOperations: SuperOperations = {
  */
 class InMemoryFSType extends FileSystemType {
     constructor() {
-        super("memfs")
+        super('memfs')
     }
 
     async mount(dentry: Dentry): Promise<Mount> {
@@ -230,8 +249,4 @@ class InMemoryFSType extends FileSystemType {
  */
 const InMemoryFS = new InMemoryFSType()
 
-export {
-    InMemoryFSType,
-    InMemoryFS
-}
-
+export { InMemoryFSType, InMemoryFS }

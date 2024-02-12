@@ -1,0 +1,31 @@
+{
+	"parser": "vue-eslint-parser",
+	"parserOptions": {
+		"ecmaVersion": 12,
+		"sourceType": "module",
+		"parser": "@typescript-eslint/parser"
+	},
+	"plugins": [
+		"@typescript-eslint"
+	],
+	"extends": [
+		"eslint:recommended",
+		"plugin:vue/vue3-recommended",
+		"plugin:@typescript-eslint/recommended"
+	],
+	"rules": {
+		"vue/html-indent": ["warn", 4, {}],
+		"vue/max-attributes-per-line": ["off"],
+		"vue/html-self-closing": ["warn", {
+			"html": {
+				"normal": "never",
+				"void": "always"
+			}
+		}],
+		"vue/singleline-html-element-content-newline": ["off"]
+	},
+	"env": {
+		"browser": true,
+		"es2021": true
+	}
+}

@@ -1,4 +1,3 @@
-
 /**
  * Radix-tree: will be used in in-memory buffer implementaion
  */
@@ -10,11 +9,11 @@ export class RadixTree<T> {
         this.root = new RadixTreeNode(maxLevels, 0, bits)
     }
 
-    getLeaf(index: number): RadixTreeNode<T|undefined> {
+    getLeaf(index: number): RadixTreeNode<T | undefined> {
         return this.root.getLeaf(index)
     }
 
-    getData(index: number): T|undefined {
+    getData(index: number): T | undefined {
         return this.root.getData(index)
     }
 
@@ -30,7 +29,7 @@ export class RadixTreeNode<T> {
     maxLevels: number
 
     /**
-     * current level in a tree. 
+     * current level in a tree.
      * ZERO for root level
      */
     level: number
@@ -46,7 +45,7 @@ export class RadixTreeNode<T> {
     children: Array<RadixTreeNode<T>>
 
     /**
-     * custom data. 
+     * custom data.
      * It should only exist on leaves.
      */
     data?: T
@@ -63,25 +62,25 @@ export class RadixTreeNode<T> {
         return this.level === this.maxLevels
     }
 
-    getLeaf(index: number): RadixTreeNode<T|undefined> {
+    getLeaf(index: number): RadixTreeNode<T | undefined> {
         if (this.isLeaf()) {
             return this
         }
 
-        let shift = (this.maxLevels - this.level - 1) * this.bits
+        const shift = (this.maxLevels - this.level - 1) * this.bits
         let i = index >> shift
         i = i & ((1 << this.bits) - 1)
-        let next = index & ((1 << shift) - 1)
+        const next = index & ((1 << shift) - 1)
         //console.log(`index=${index}, i=${i}, next=${next}`)
         let child = this.children[i]
         if (!child) {
-            child = this.children[i] = new RadixTreeNode(this.maxLevels, this.level+1, this.bits)
+            child = this.children[i] = new RadixTreeNode(this.maxLevels, this.level + 1, this.bits)
         }
 
         return child.getLeaf(next)
     }
 
-    getData(index: number): T|undefined {
+    getData(index: number): T | undefined {
         return this.getLeaf(index).data
     }
 

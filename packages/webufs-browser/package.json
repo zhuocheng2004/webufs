@@ -22,7 +22,11 @@
   ],
   "scripts": {
     "build": "rollup -c",
-    "test": ""
+    "lint": "eslint --ext .js,.ts src/**",
+    "prettier": "prettier --check src"
+  },
+  "devDependencies": {
+    "@rollup/plugin-terser": "^0.4.4"
   },
   "dependencies": {
     "@webufs/webufs": "^0.0.13",

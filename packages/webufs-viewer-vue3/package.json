@@ -27,7 +27,12 @@
   ],
   "scripts": {
     "build": "rollup -c",
-    "test": ""
+    "lint": "eslint --ext .js,.ts,.vue src/**",
+    "prettier": "prettier --check src"
+  },
+  "devDependencies": {
+    "eslint-plugin-vue": "^9.21.1",
+    "rollup-plugin-vue": "^6.0.0"
   },
   "dependencies": {
     "@webufs/webufs": "^0.0.13"

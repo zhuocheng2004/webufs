@@ -22,7 +22,9 @@
   ],
   "scripts": {
     "build": "rollup -c",
-    "test": "NODE_OPTIONS=--experimental-vm-modules jest"
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest",
+    "lint": "eslint --ext .js,.ts src/** tests/**",
+    "prettier": "prettier --check src tests"
   }
 }
 

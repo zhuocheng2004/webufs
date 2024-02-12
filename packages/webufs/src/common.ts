@@ -3,7 +3,7 @@
  * Also serves as examples
  */
 
-import { Dentry, Inode, InodeType } from "./fs"
+import { Dentry, Inode, InodeType } from './fs'
 
 /*
  * The 'simple*' methods operates at in-memory level.
@@ -19,8 +19,8 @@ export async function genericDropInode(inode: Inode) {
     }
 }
 
-export async function simpleLookup(base: Dentry, childName: string): Promise<Dentry|null> {
-    for (let subdir of base.children) {
+export async function simpleLookup(base: Dentry, childName: string): Promise<Dentry | null> {
+    for (const subdir of base.children) {
         if (subdir.name === childName) {
             return subdir
         }
