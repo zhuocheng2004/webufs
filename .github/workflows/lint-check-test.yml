@@ -13,6 +13,8 @@ jobs:
                 node-version: '20'
             - name: Setup PNPM
               uses: pnpm/action-setup@v2
+              with:
+                version: 8
             - name: Prepare
               run: pnpm install
             - name: Prettier Check
