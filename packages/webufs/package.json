@@ -27,5 +27,6 @@
         "test": "NODE_OPTIONS=--experimental-vm-modules jest",
         "lint": "eslint --ext .js,.ts src/** tests/**",
         "prettier": "prettier --check src tests"
-    }
+    },
+    "gitHead": "b77fe5280c4bdfb9fa26f973ef1efa8cb0c9e259"
 }

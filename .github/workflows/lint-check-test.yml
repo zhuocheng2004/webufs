@@ -1,5 +1,5 @@
 name: GitHub Actions for Lint Checking and Testing
-run-name: ${{ github.actor }}$ is running GitHub Actions
+run-name: ${{ github.actor }} is running GitHub Actions
 env:
     HUSKY: 0
 on: [push]
