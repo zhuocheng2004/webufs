@@ -19,7 +19,7 @@ and then
 // Yes, it's async
 const ctx = await webufs.createDefaultContext()
 
-// Mount IndexedDB-backed Filesystem at '/idb'
+// Mount IndexedDB-backed filesystem at '/idb'
 ctx.getVFS().registerFSType(webufs.IDBFS)
 await ctx.mkdir('idb')
 await ctx.mount('idbfs', '/idb')

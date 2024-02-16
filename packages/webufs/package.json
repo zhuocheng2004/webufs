@@ -1,7 +1,7 @@
 {
     "name": "@webufs/webufs",
     "version": "0.0.16",
-    "description": "webufs core",
+    "description": "webufs: a Linux-style web filesystem framework",
     "keywords": [
         "filesystem",
         "fs",

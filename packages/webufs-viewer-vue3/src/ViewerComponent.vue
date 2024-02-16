@@ -173,7 +173,7 @@ export default defineComponent({
                         this.$emit('error', e)
                     }
                 } else {
-                    this.$emit('error', new Error(`cannot unlink dir "${item.name}"`))
+                    this.$emit('error', new Error(`cannot unlink "${item.name}": is dir`))
                 }
             }
             await this.update()

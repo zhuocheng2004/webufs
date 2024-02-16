@@ -31,7 +31,7 @@ await ctx.mount('idbfs', '/idb', {
 	 * defualt: window.indexedDB
 	 * 
 	 * You can choose any other custom indexedDB implementation
-	 * instead of the default one
+	 * instead of the default one.
 	 */
 	indexedDB: indexedDB,
 
@@ -39,7 +39,7 @@ await ctx.mount('idbfs', '/idb', {
 	 * type: string
 	 * default: 'webufs-idb'
 	 * 
-	 * the name of the indexedDB database where our filesystem uses
+	 * the name of the IndexedDB database that our filesystem uses
 	 * as the storage
 	 * 
 	 * In this way we can have multiple independent filesystems 

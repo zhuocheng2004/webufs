@@ -9,7 +9,7 @@ If you have any issues or suggestions, feel free to discuss them on GitHub. Than
 
 ## Usage
 
-The `createDefaultContext` method will mount the default in-memory filesystem at `/` (data will be lost after reloading).
+The `createDefaultContext` method will mount the default in-memory filesystem at `/` (data will be lost upon closing).
 
 To mount other filesystems, see section `Mounting Other FS` below.
 
