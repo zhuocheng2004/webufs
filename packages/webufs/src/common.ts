@@ -11,7 +11,7 @@ import { Dentry, Inode, InodeType } from './fs'
 
 export async function genericDropInode(inode: Inode) {
     // Note that JavaScript has GC.
-    if (inode && inode.dentry && inode.dentry.parent) {
+    if (inode.dentry && inode.dentry.parent) {
         inode.dentry.parent.remove(inode.dentry)
         if (inode.dentry.parent.inode) {
             inode.dentry.parent.inode.size--
@@ -31,14 +31,14 @@ export async function simpleLookup(base: Dentry, childName: string): Promise<Den
 export async function simpleCreate(inode: Inode, dentry: Dentry) {
     dentry.inode = inode
     if (!dentry.parent.inode) throw Error('negative parent dentry')
-    dentry.inode.get()
+    await inode.get()
     dentry.parent.add(dentry)
     dentry.parent.inode.size++
 }
 
 export async function simpleUnlink(dentry: Dentry) {
     if (!dentry.inode) throw Error('negative dentry')
-    dentry.inode.put()
+    await dentry.inode.put()
     dentry.parent.remove(dentry)
 }
 
@@ -52,6 +52,6 @@ export async function simpleRmdir(dentry: Dentry) {
     if (!dentry.inode) throw Error('negative dentry')
     if (dentry.inode.type !== InodeType.DIR) throw new Error('not a directory')
     if (dentry.children.length > 0) throw new Error('directory not empty')
-    dentry.inode.put()
+    await dentry.inode.put()
     dentry.parent.remove(dentry)
 }

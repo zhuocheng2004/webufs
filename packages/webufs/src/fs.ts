@@ -82,14 +82,13 @@ export enum InodeType {
 export class Inode {
     type: InodeType
 
-    /**
-     * inode operations
-     */
+    /** inode number */
+    ino: number = 0
+
+    /** inode operations */
     inode_op: InodeOperations
 
-    /**
-     * file operations
-     */
+    /** file operations */
     file_op?: FileOperations
 
     /**
@@ -102,7 +101,7 @@ export class Inode {
      */
     size: number = 0
 
-    private nlink: number = 0
+    protected nlink: number = 0
 
     constructor(type: InodeType, inode_op: InodeOperations, file_op?: FileOperations) {
         this.type = type
@@ -110,11 +109,15 @@ export class Inode {
         this.file_op = file_op
     }
 
-    get() {
+    async links() {
+        return this.links
+    }
+
+    async get() {
         this.nlink++
     }
 
-    put() {
+    async put() {
         this.nlink--
         if (this.nlink <= 0) {
             this.dentry?.mount?.op.dropInode(this)
@@ -220,7 +223,7 @@ export interface InodeOperations {
     link: (dir: Dentry, old_dentry: Dentry, new_dentry: Dentry) => Promise<void>
 
     /**
-     * Called when deleting inodes.
+     * Called when unlinking/deleting inodes.
      * @param dentry the dentry to be deleted
      * @returns void
      */
@@ -326,5 +329,5 @@ export abstract class FileSystemType {
      * Called when an instance is being mounted.
      * @param dentry the dentry to mount on
      */
-    abstract mount(dentry: Dentry): Promise<Mount>
+    abstract mount(dentry: Dentry, options?: object): Promise<Mount>
 }

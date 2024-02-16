@@ -95,7 +95,7 @@ export class FileDescriptor {
     async close() {
         await this.op.flush()
         await this.op.release()
-        this.file.inode.put()
+        await this.file.inode.put()
     }
 
     /**
@@ -188,6 +188,10 @@ export class Context {
         this.pwd = this.root = Dentry.getRoot()
     }
 
+    getVFS(): VFS {
+        return this.vfs
+    }
+
     /**
      * Lookup dir/file with respect to pwd/root
      * @param path path to look up
@@ -234,26 +238,25 @@ export class Context {
      * only used when mounting the first fs
      * @param fsName the first fs
      */
-    async mountInit(fsName: string): Promise<void> {
+    async mountInit(fsName: string, options?: object): Promise<void> {
         const fsType = this.vfs.getFSType(fsName)
-        this.root.mount = await fsType.mount(this.root)
-        this.root.inode = await this.root.mount.op.mkInode(InodeType.DIR)
-        this.pwd.mount = await fsType.mount(this.pwd)
-        this.pwd.inode = await this.pwd.mount.op.mkInode(InodeType.DIR)
+        this.pwd.mount = this.root.mount = await fsType.mount(this.root, options)
+        this.pwd.inode = this.root.inode = await this.root.mount.op.mkInode(InodeType.DIR)
     }
 
     /**
      * Mount an fs at a dir
      * @param fsName name of fs to mount
      * @param path mount point
+     * @param options additional options
      */
-    async mount(fsName: string, path: string) {
+    async mount(fsName: string, path: string, options?: object) {
         const fsType = this.vfs.getFSType(fsName)
         const dentry = await this.lookup(path, LookupType.NORMAL)
         // the dentry must be an empty dir
         if (!dentry.inode || dentry.inode.type !== InodeType.DIR) throw Error('not a directory')
         if (!dentry.isEmpty()) throw Error('directory not empty')
-        await fsType.mount(dentry)
+        await fsType.mount(dentry, options)
     }
 
     /**
@@ -277,7 +280,7 @@ export class Context {
         try {
             const dentry = await this.lookup(path, LookupType.EXCEPT_LAST)
             if (dentry.inode) {
-                throw Error(`file exists`)
+                throw Error('file exists')
             }
             if (!dentry.mount) {
                 throw Error('negative dentry')
@@ -300,6 +303,7 @@ export class Context {
         try {
             const dentry = await this.lookup(path, LookupType.NORMAL)
             if (dentry.inode) {
+                if (dentry.mount !== dentry.parent.mount) throw Error('cannot remove mount point, please umount first')
                 await dentry.inode.inode_op.rmdir(dentry)
             } else {
                 dentry.parent.remove(dentry)
@@ -359,7 +363,7 @@ export class Context {
                 await inode.file_op.open(file)
             }
 
-            inode.get()
+            await inode.get()
 
             return new FileDescriptor(file)
         } catch (error) {

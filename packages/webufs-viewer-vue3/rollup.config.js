@@ -1,4 +1,3 @@
-
 import nodeResolve from '@rollup/plugin-node-resolve'
 import esbuild from 'rollup-plugin-esbuild'
 import vue from 'rollup-plugin-vue'
@@ -12,7 +11,7 @@ export default [
                 dir: 'build',
             },
         ],
-        external: [ 'vue', '@webufs/webufs' ],
-        plugins: [ nodeResolve(), vue(), esbuild() ],
-    }
+        external: ['vue', '@webufs/webufs'],
+        plugins: [nodeResolve(), vue(), esbuild()],
+    },
 ]

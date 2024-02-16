@@ -1,8 +1,9 @@
 # Webufs browser-side usable js library.
 
-This package builds the webufs package as an `iife` js library, 
-which is usable in the browser.
+This projet builds the `@webufs/webufs` package as an `iife` js library, 
+which is directly usable in the browser.
 
+Note: `@webufs/webufs-idb` is included in the build.
 
 ## Usage
 ```html
@@ -18,7 +19,13 @@ and then
 // Yes, it's async
 const ctx = await webufs.createDefaultContext()
 
+// Mount IndexedDB-backed Filesystem at '/idb'
+ctx.getVFS().registerFSType(webufs.IDBFS)
+await ctx.mkdir('idb')
+await ctx.mount('idbfs', '/idb')
+await ctx.chdir('idb')
+
 // ... now play with 'ctx'
 ```
 
-For details on how to use it, please read the document of the core package "@webufs/webufs"
+For details on how to use it, please read the document of the core package `@webufs/webufs` and `@webufs/webufs-idb`

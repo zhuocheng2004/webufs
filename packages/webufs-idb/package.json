@@ -27,8 +27,12 @@
     ],
     "scripts": {
         "build": "rollup -c",
+        "test": "NODE_OPTIONS=--experimental-vm-modules jest",
         "lint": "eslint --ext .js,.ts src/**",
         "prettier": "prettier --check src"
+    },
+    "devDependencies": {
+        "fake-indexeddb": "^5.0.2"
     },
     "dependencies": {
         "@webufs/webufs": "^0.0.15"

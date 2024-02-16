@@ -51,6 +51,7 @@ export default defineComponent({
             try {
                 let fd = await this.context.open('.', { directory: true })
                 let infos = await fd.getdents()
+                await fd.close()
                 let list = []
                 for (let info of infos) {
                     const stat = await this.context.stat(info.name)

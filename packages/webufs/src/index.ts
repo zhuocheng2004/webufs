@@ -1,11 +1,9 @@
-import { Dentry, InodeType, Inode, SeekType, StatConst, KStat, FileSystemType, Mount } from './fs'
-import { VFS, LookupType } from './VFS'
-import { Context, FileDescriptor, DirEntry, DirEntryType, Stat } from './Context'
-import { InMemoryFSType, InMemoryFS } from './memory'
-
+import { Context } from './Context'
 // These are only for debug
 import { RadixTree } from './RadixTree'
 import { ResizableBuffer } from './ResizableBuffer'
+import { VFS } from './VFS'
+import { InMemoryFS } from './memory'
 
 /**
  * The default VFS object - you can always use it.
@@ -34,28 +32,14 @@ const debug = {
     ResizableBuffer,
 }
 
-export {
-    Dentry,
-    InodeType,
-    Inode,
-    SeekType,
-    StatConst,
-    KStat,
-    FileSystemType,
-    Mount,
-    LookupType,
-    VFS,
-    defaultVFS,
-    Context,
-    createDefaultContext,
-    FileDescriptor,
-    DirEntry,
-    DirEntryType,
-    Stat,
+export * from './fs'
+export * from './VFS'
+export * from './Context'
+export * from './memory'
 
-    // default FS implementations
-    InMemoryFSType,
-    InMemoryFS,
+export {
+    defaultVFS,
+    createDefaultContext,
 
     // Do not use the following. They are for debug purpose.
     debug,

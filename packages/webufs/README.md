@@ -9,9 +9,13 @@ If you have any issues or suggestions, feel free to discuss them on GitHub. Than
 
 ## Usage
 
+The `createDefaultContext` method will mount the default in-memory filesystem at `/` (data will be lost after reloading).
+
+To mount other filesystems, see section `Mounting Other FS` below.
+
 Basic Directory Operation:
 ```ts
-import { createDefaultContext } from "@webufs/webufs"
+import { createDefaultContext } from '@webufs/webufs'
 
 // Yes, it's async
 const ctx = await createDefaultContext()
@@ -55,6 +59,25 @@ await fd.close()
 // delete a file
 await ctx.unlink('a.txt')
 ```
+
+## Mounting Other FS
+
+We take `@webufs/webufs-idb`, a filesystem implementation of IndexedDB backend, for example:
+
+```ts
+import { createDefaultContext } from '@webufs/webufs'
+import { IDBFS } from '@webufs/webufs-idb'
+
+const ctx = await createDefaultContext()
+ctx.getVFS().registerFSType(IDBFS)
+await ctx.mkdir('idb')
+await ctx.mount('idbfs', '/idb')
+await ctx.chdir('idb')
+
+// See the documentation of '@webufs/webufs-idb' for further detail.
+```
+
+FS umounting not implemented yet.
 
 ## Hope (not implemented yet)
 
