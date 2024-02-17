@@ -52,10 +52,10 @@ importers:
     packages/webufs-browser:
         dependencies:
             '@webufs/webufs':
-                specifier: ^0.0.16
+                specifier: ^0.1.0
                 version: link:../webufs
             '@webufs/webufs-idb':
-                specifier: ^0.0.11
+                specifier: ^0.1.0
                 version: link:../webufs-idb
         devDependencies:
             '@rollup/plugin-terser':
@@ -65,7 +65,7 @@ importers:
     packages/webufs-idb:
         dependencies:
             '@webufs/webufs':
-                specifier: ^0.0.16
+                specifier: ^0.1.0
                 version: link:../webufs
         devDependencies:
             fake-indexeddb:
@@ -75,7 +75,7 @@ importers:
     packages/webufs-viewer-vue3:
         dependencies:
             '@webufs/webufs':
-                specifier: ^0.0.16
+                specifier: ^0.1.0
                 version: link:../webufs
             vue:
                 specifier: ^3.4.15
