@@ -27,6 +27,7 @@ export default defineComponent({
             items: [] as Array<Item>,
             selectedFiles: null as null | FileList,
             allSelect: false,
+            uploading: false,
         }
     },
     async created() {
@@ -151,9 +152,11 @@ export default defineComponent({
                     if (!this.context) return
                     if (!ev.target) return
                     try {
+                        this.uploading = true
                         const fd = await this.context.open(file.name, { create: true })
                         await fd.write(ev.target.result as ArrayBuffer, file.size)
                         await fd.close()
+                        this.uploading = false
                     } catch (e) {
                         this.$emit('error', e)
                     }
@@ -266,6 +269,7 @@ export default defineComponent({
                 <span>Choose File: </span>
                 <input id="input" type="file" @change="uploadOnChange" />
                 <button @click="uploadFiles">Upload</button>
+                <span v-if="uploading">File Uploading... (will take a while)</span>
             </div>
         </div>
     </div>

@@ -28,7 +28,7 @@
     "scripts": {
         "build": "rollup -c",
         "test": "NODE_OPTIONS=--experimental-vm-modules jest",
-        "lint": "eslint --ext .js,.ts src/**",
+        "lint": "eslint --ext .js,.ts --ignore-pattern '*.txt' src/**",
         "prettier": "prettier --check src"
     },
     "devDependencies": {

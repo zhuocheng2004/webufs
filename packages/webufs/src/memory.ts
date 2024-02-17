@@ -181,8 +181,10 @@ const memFSFileOperations: FileOperations = {
         }
         return new MemFSFile(inode)
     },
-    flush: async function (): Promise<void> {},
-    release: async function (): Promise<void> {},
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    flush: async function (file: VFile): Promise<void> {},
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    release: async function (file: VFile): Promise<void> {},
 }
 
 const memFSDirFileOperations: FileOperations = {
@@ -214,8 +216,10 @@ const memFSDirFileOperations: FileOperations = {
         const inode = getAsMemFSInode(file.inode)
         return new MemFSFile(inode)
     },
-    flush: async function (): Promise<void> {},
-    release: async function (): Promise<void> {},
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    flush: async function (file: VFile): Promise<void> {},
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    release: async function (file: VFile): Promise<void> {},
 }
 
 const memFSSuperOperations: SuperOperations = {

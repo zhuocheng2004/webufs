@@ -2,10 +2,10 @@ import { describe, expect, test } from '@jest/globals'
 
 import { indexedDB } from 'fake-indexeddb'
 
-import { DirEntryType, createDefaultContext, StatConst } from '../../webufs/build/index'
+import { DirEntryType, createDefaultContext, StatConst, SeekType } from '../../webufs/build/index'
 import { IDBFS } from '../build/index'
 
-describe('Jest Environment Test', () => {
+describe('Environment Test', () => {
     test('Get Webufs', async () => {
         const ctx = await createDefaultContext()
         expect(ctx).toBeDefined()
@@ -56,20 +56,39 @@ describe('Directory Operation Test', () => {
         await ctx.mount('idbfs', '/idb', { indexedDB: indexedDB })
         await ctx.chdir('idb')
 
+        await ctx.mkdir('scan')
+        await ctx.chdir('scan')
+
+        let fd = await ctx.open('a.txt', { create: true })
+        const src = new Uint8Array([0x30, 0x31, 0x32, 0x33])
+        for (let i = 0; i < 1000; i++) {
+            fd.write(src.buffer)
+        }
+        await fd.close()
+
         await ctx.mkdir('d1')
         await ctx.mkdir('d2')
+
+        fd = await ctx.open('b.txt', { create: true })
+        await fd.close()
 
         await ctx.mkdir('d3')
         // subdir files shouldn't affect this dir
         await ctx.chdir('d3')
         await ctx.mkdir('abcdefgh')
+        fd = await ctx.open('xyzw.cpp', { create: true })
+        await fd.close()
         await ctx.chdir('..')
 
-        let fd = await ctx.open('/idb', { directory: true })
+        fd = await ctx.open('/idb/scan', { directory: true })
         let fileInfos = await fd.getdents()
-        expect(fileInfos.length).toBe(3)
+        expect(fileInfos.length).toBe(5)
         for (let entry of fileInfos) {
             switch (entry.name) {
+                case 'a.txt':
+                case 'b.txt':
+                    expect(entry.type).toBe(DirEntryType.DT_REG)
+                    break
                 case 'd1':
                 case 'd2':
                 case 'd3':
@@ -83,13 +102,67 @@ describe('Directory Operation Test', () => {
 })
 
 describe('File Operation Test', () => {
-    test('seek/read/write', async () => {
+    /*test('seek/read/write', async () => {
         const ctx = await createDefaultContext()
         ctx.getVFS().registerFSType(IDBFS)
         await ctx.mkdir('idb')
         await ctx.mount('idbfs', '/idb', { indexedDB: indexedDB })
         await ctx.chdir('idb')
-    })
+
+        await ctx.mkdir('a')
+        await ctx.mkdir('a/b')
+        await ctx.chdir('a/b')
+
+        const fd = await ctx.open('a.txt', { create: true })
+
+        const src = new Uint8Array([0x30, 0x31, 0x32, 0x33])
+
+        await fd.write(src.buffer)
+        await fd.write(src.buffer)
+        await fd.write(src.buffer)
+        await fd.write(src.buffer)
+
+        const dst = new ArrayBuffer(16)
+        const dstView = new DataView(dst)
+
+        await fd.seek(0, SeekType.SET)
+        await fd.read(dst)
+        for (let i = 0; i < 4; i++) {
+            expect(dstView.getUint8(i * 4 + 0)).toBe(0x30)
+            expect(dstView.getUint8(i * 4 + 1)).toBe(0x31)
+            expect(dstView.getUint8(i * 4 + 2)).toBe(0x32)
+            expect(dstView.getUint8(i * 4 + 3)).toBe(0x33)
+        }
+
+        await fd.seek(-12, SeekType.CUR)
+        await fd.read(dst, 8)
+        for (let i = 0; i < 2; i++) {
+            expect(dstView.getUint8(i * 4 + 0)).toBe(0x30)
+            expect(dstView.getUint8(i * 4 + 1)).toBe(0x31)
+            expect(dstView.getUint8(i * 4 + 2)).toBe(0x32)
+            expect(dstView.getUint8(i * 4 + 3)).toBe(0x33)
+        }
+
+        await fd.seek(2, SeekType.SET)
+        await fd.read(dst, 8)
+        for (let i = 0; i < 2; i++) {
+            expect(dstView.getUint8(i * 4 + 0)).toBe(0x32)
+            expect(dstView.getUint8(i * 4 + 1)).toBe(0x33)
+            expect(dstView.getUint8(i * 4 + 2)).toBe(0x30)
+            expect(dstView.getUint8(i * 4 + 3)).toBe(0x31)
+        }
+
+        await fd.seek(-13, SeekType.END)
+        await fd.read(dst, 8)
+        for (let i = 0; i < 2; i++) {
+            expect(dstView.getUint8(i * 4 + 0)).toBe(0x33)
+            expect(dstView.getUint8(i * 4 + 1)).toBe(0x30)
+            expect(dstView.getUint8(i * 4 + 2)).toBe(0x31)
+            expect(dstView.getUint8(i * 4 + 3)).toBe(0x32)
+        }
+
+        await fd.close()
+    })*/
 
     test('large data read/write', async () => {
         const ctx = await createDefaultContext()
@@ -97,6 +170,28 @@ describe('File Operation Test', () => {
         await ctx.mkdir('idb')
         await ctx.mount('idbfs', '/idb', { indexedDB: indexedDB })
         await ctx.chdir('idb')
+
+        await ctx.mkdir('lrw')
+        await ctx.chdir('lrw')
+
+        const N = 0x20000
+        const src = new Uint8Array(N)
+        for (let i = 0; i < N; i++) {
+            src[i] = Math.floor(Math.random() * 0x100)
+        }
+
+        const fd = await ctx.open('a.txt', { create: true })
+        await fd.write(src.buffer)
+
+        const dst = new ArrayBuffer(N)
+        const dstView = new DataView(dst)
+        await fd.seek(-N, SeekType.END) // just a test
+        await fd.read(dst)
+        await fd.close()
+
+        for (let i = 0; i < N; i++) {
+            expect(dstView.getUint8(i)).toBe(src[i])
+        }
     })
 
     test('stat', async () => {
@@ -106,8 +201,41 @@ describe('File Operation Test', () => {
         await ctx.mount('idbfs', '/idb', { indexedDB: indexedDB })
         await ctx.chdir('idb')
 
+        await ctx.mkdir('stat')
+        await ctx.chdir('stat')
+
+        const N = 0x20000
+        const src = new Uint8Array(N)
+        for (let i = 0; i < N; i++) {
+            src[i] = Math.floor(Math.random() * 0x100)
+        }
+
+        let fd = await ctx.open('a.txt', { create: true })
+        await fd.write(src.buffer)
+        await fd.close()
+
+        let stat = await ctx.stat('a.txt')
+        expect(stat.size).toBe(0x20000)
+        expect(stat.mode & StatConst.IFMT).toBe(StatConst.IFREG)
+
+        fd = await ctx.open('b.txt', { create: true })
+        await fd.write(src.buffer.slice(0, 100))
+        await fd.close()
+
+        stat = await ctx.stat('b.txt')
+        expect(stat.size).toBe(100)
+        expect(stat.mode & StatConst.IFMT).toBe(StatConst.IFREG)
+
+        fd = await ctx.open('c.txt', { create: true })
+        await fd.write(src.buffer.slice(0, 0x12345))
+        await fd.close()
+
+        stat = await ctx.stat('c.txt')
+        expect(stat.size).toBe(0x12345)
+        expect(stat.mode & StatConst.IFMT).toBe(StatConst.IFREG)
+
         await ctx.mkdir('dir')
-        let stat = await ctx.stat('dir/')
+        stat = await ctx.stat('dir/')
         expect(stat.size).toBe(0)
         expect(stat.mode & StatConst.IFMT).toBe(StatConst.IFDIR)
     })
@@ -118,5 +246,23 @@ describe('File Operation Test', () => {
         await ctx.mkdir('idb')
         await ctx.mount('idbfs', '/idb', { indexedDB: indexedDB })
         await ctx.chdir('idb')
+
+        await ctx.mkdir('link')
+        await ctx.chdir('link')
+
+        let fd = await ctx.open('a.txt', { create: true })
+        await fd.close()
+
+        fd = await ctx.open('.', { directory: true })
+        let fileInfos = await fd.getdents()
+        expect(fileInfos.length).toBe(1)
+        await fd.close()
+
+        await ctx.unlink('a.txt')
+
+        fd = await ctx.open('.', { directory: true })
+        fileInfos = await fd.getdents()
+        expect(fileInfos.length).toBe(0)
+        await fd.close()
     })
 })

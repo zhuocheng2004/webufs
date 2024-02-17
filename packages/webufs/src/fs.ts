@@ -183,10 +183,10 @@ export interface FileOperations {
     write: (file: VFile, src: ArrayBuffer, size: number) => Promise<void>
     iterate: (file: VFile, callback: IterateCallback) => Promise<void>
     open: (file: VFile) => Promise<VFile>
-    flush: () => Promise<void>
+    flush: (file: VFile) => Promise<void>
 
     /** called when file is closed */
-    release: () => Promise<void>
+    release: (file: VFile) => Promise<void>
 }
 
 /**

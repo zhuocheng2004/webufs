@@ -2,7 +2,7 @@ import { describe, expect, test } from '@jest/globals'
 
 import { DirEntryType, SeekType, createDefaultContext, StatConst } from '../build/index'
 
-describe('Jest Environment Test', () => {
+describe('Environment Test', () => {
     test('Get Webufs', async () => {
         const ctx = await createDefaultContext()
         expect(ctx).toBeDefined()
@@ -157,7 +157,7 @@ describe('File Operation Test', () => {
     test('large data read/write', async () => {
         const ctx = await createDefaultContext()
 
-        const N = 0x4000
+        const N = 0x20000
         const src = new Uint8Array(N)
         for (let i = 0; i < N; i++) {
             src[i] = Math.floor(Math.random() * 0x100)
@@ -180,7 +180,7 @@ describe('File Operation Test', () => {
     test('stat', async () => {
         const ctx = await createDefaultContext()
 
-        const N = 0x4000
+        const N = 0x20000
         const src = new Uint8Array(N)
         for (let i = 0; i < N; i++) {
             src[i] = Math.floor(Math.random() * 0x100)
@@ -191,7 +191,23 @@ describe('File Operation Test', () => {
         await fd.close()
 
         let stat = await ctx.stat('a.txt')
-        expect(stat.size).toBe(0x4000)
+        expect(stat.size).toBe(0x20000)
+        expect(stat.mode & StatConst.IFMT).toBe(StatConst.IFREG)
+
+        fd = await ctx.open('b.txt', { create: true })
+        await fd.write(src.buffer.slice(0, 100))
+        await fd.close()
+
+        stat = await ctx.stat('b.txt')
+        expect(stat.size).toBe(100)
+        expect(stat.mode & StatConst.IFMT).toBe(StatConst.IFREG)
+
+        fd = await ctx.open('c.txt', { create: true })
+        await fd.write(src.buffer.slice(0, 0x12345))
+        await fd.close()
+
+        stat = await ctx.stat('c.txt')
+        expect(stat.size).toBe(0x12345)
         expect(stat.mode & StatConst.IFMT).toBe(StatConst.IFREG)
 
         await ctx.mkdir('dir')

@@ -93,8 +93,8 @@ export class FileDescriptor {
      * This will flush all pending operations and release resources.
      */
     async close() {
-        await this.op.flush()
-        await this.op.release()
+        await this.op.flush(this.file)
+        await this.op.release(this.file)
         await this.file.inode.put()
     }
 

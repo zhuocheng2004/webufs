@@ -12,6 +12,9 @@ import {
     VFile,
 } from '@webufs/webufs'
 
+const PAGE_SHIFT = 16
+const PAGE_SIZE = 1 << PAGE_SHIFT
+
 function appendErrorMsg(msg?: string) {
     return msg ? ': ' + msg : ''
 }
@@ -76,10 +79,11 @@ type IDBFSInodeItem = {
     ino: number
     type: number
     links: number
-    data: Map<string, number> | ArrayBuffer
+    data?: Map<string, number> | Array<number>
+    partial?: number
 }
 
-async function getItemFromDB(db: IDBDatabase, ino: number): Promise<IDBFSInodeItem> {
+async function getInodeItemFromDB(db: IDBDatabase, ino: number): Promise<IDBFSInodeItem> {
     return await new Promise<IDBFSInodeItem>((resolve, reject) => {
         const request = db.transaction('inodes', 'readonly').objectStore('inodes').get(ino)
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -96,6 +100,12 @@ class IDBFSInode extends Inode {
     /** dir entries if dir */
     entries?: Map<string, number>
 
+    /** list of block ids */
+    blockIds?: Array<number>
+
+    /** size of the last block */
+    partial: number = 0
+
     constructor(type: InodeType, file_op?: FileOperations) {
         super(type, idbFSInodeOperations, file_op)
     }
@@ -109,30 +119,45 @@ class IDBFSInode extends Inode {
                 // make a copy
                 return new Map(this.entries)
             case InodeType.REG:
-                break
+                if (this.blockIds === undefined) {
+                    return []
+                }
+                // make a copy
+                return [...this.blockIds]
             default:
                 throw new IDBFSError('not supported inode type')
         }
+    }
+
+    getDB(): IDBDatabase {
+        if (!this.dentry || !this.dentry.mount) throw new IDBFSError('flying inode')
+        const mount = this.dentry.mount as IDBFSMount
+        const db = mount.getDB()
+        if (!db) throw new IDBFSNoDBError()
+        return db
     }
 
     /**
      * Update inode info according to key inode.ino
      */
     async updateInfo() {
-        if (!this.dentry || !this.dentry.mount) throw new IDBFSError('flying inode')
-        const mount = this.dentry.mount as IDBFSMount
-        const db = mount.getDB()
-        if (!db) throw new IDBFSNoDBError()
-
-        const item = await getItemFromDB(db, this.ino)
+        if (!this.dentry) throw new IDBFSError('flying inode')
+        const db = this.getDB()
+        const item = await getInodeItemFromDB(db, this.ino)
 
         this.type = fromTypeCode(item.type)
         this.nlink = item.links
+        this.dentry.children = []
 
         if (item.type === IDBFSInodeType.DIR) {
             this.entries = new Map(item.data as Map<string, number>)
-            this.dentry.children = []
             this.size = this.entries.size
+            this.blockIds = undefined
+        } else if (item.type === IDBFSInodeType.REG) {
+            this.blockIds = [...(item.data as Array<number>)]
+            this.partial = item.partial === undefined ? 0 : item.partial
+            this.size = this.blockIds.length <= 0 ? 0 : ((this.blockIds.length - 1) << PAGE_SHIFT) + this.partial
+            this.entries = undefined
         }
     }
 
@@ -140,12 +165,9 @@ class IDBFSInode extends Inode {
      * This will create sub-dir abstract inode objects
      */
     async updateChilden() {
-        if (!this.dentry || !this.dentry.mount) throw new IDBFSError('flying inode')
-        const mount = this.dentry.mount as IDBFSMount
-        const db = mount.getDB()
-        if (!db) throw new IDBFSNoDBError()
-
-        const item = await getItemFromDB(db, this.ino)
+        if (!this.dentry) throw new IDBFSError('flying inode')
+        const db = this.getDB()
+        const item = await getInodeItemFromDB(db, this.ino)
 
         if (item.type !== IDBFSInodeType.DIR) throw new IDBFSError('not directory')
 
@@ -154,7 +176,7 @@ class IDBFSInode extends Inode {
         for (const entry of this.entries) {
             const childIno = entry[1]
             const childName = entry[0]
-            const childItem = await getItemFromDB(db, childIno)
+            const childItem = await getInodeItemFromDB(db, childIno)
             const childInode = mkInode(fromTypeCode(childItem.type))
             childInode.ino = childIno
             const subDentry = new Dentry(childName, this.dentry.mount)
@@ -171,10 +193,7 @@ class IDBFSInode extends Inode {
      * create corresponding entry in database
      */
     async addToDB() {
-        if (!this.dentry || !this.dentry.mount) throw new IDBFSError('flying inode')
-        const mount = this.dentry.mount as IDBFSMount
-        const db = mount.getDB()
-        if (!db) throw new IDBFSNoDBError()
+        const db = this.getDB()
         await new Promise<void>((resolve, reject) => {
             const request = db
                 .transaction('inodes', 'readwrite')
@@ -183,6 +202,7 @@ class IDBFSInode extends Inode {
                     type: toTypeCode(this.type),
                     links: this.nlink,
                     data: this.getData(),
+                    partial: this.partial,
                 })
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             request.onerror = (event) => reject(new IDBFSDBError(`cannot add to objectStore "inodes"`))
@@ -211,10 +231,7 @@ class IDBFSInode extends Inode {
      * update data of corresponding entry in database
      */
     async putToDB() {
-        if (!this.dentry || !this.dentry.mount) throw new IDBFSError('flying inode')
-        const mount = this.dentry.mount as IDBFSMount
-        const db = mount.getDB()
-        if (!db) throw new IDBFSNoDBError()
+        const db = this.getDB()
         await new Promise<void>((resolve, reject) => {
             const request = db
                 .transaction('inodes', 'readwrite')
@@ -224,6 +241,7 @@ class IDBFSInode extends Inode {
                     type: toTypeCode(this.type),
                     links: this.nlink,
                     data: this.getData(),
+                    partial: this.partial,
                 })
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             request.onerror = (event) => reject(new IDBFSDBError(`cannot put to objectStore "inodes"`))
@@ -237,10 +255,22 @@ class IDBFSInode extends Inode {
      * remove information from database
      */
     async drop() {
-        if (!this.dentry || !this.dentry.mount) throw new IDBFSError('flying inode')
-        const mount = this.dentry.mount as IDBFSMount
-        const db = mount.getDB()
-        if (!db) throw new IDBFSNoDBError()
+        const db = this.getDB()
+
+        // if regular file, delete associated blocks from database
+        if (this.type === InodeType.REG && this.blockIds) {
+            for (const id of this.blockIds) {
+                await new Promise<void>((resolve, reject) => {
+                    const request = db.transaction('blocks', 'readwrite').objectStore('blocks').delete(id)
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    request.onerror = (event) => reject(new IDBFSDBError(`cannot delete from objectStore "blocks"`))
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    request.onsuccess = (event) => resolve()
+                })
+            }
+        }
+
+        // remove the inode object from database
         await new Promise<void>((resolve, reject) => {
             const request = db.transaction('inodes', 'readwrite').objectStore('inodes').delete(this.ino)
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -267,11 +297,170 @@ class IDBFSInode extends Inode {
     }
 }
 
+type IDBFSBlockItem = {
+    id: number
+    data: ArrayBuffer
+}
+
 class IDBFSFile extends VFile {
     pos: number = 0
 
+    ino: IDBFSInode
+
+    buffer: ArrayBuffer = new ArrayBuffer(PAGE_SIZE)
+
     constructor(inode: IDBFSInode) {
         super(inode)
+        this.ino = inode
+    }
+
+    async flush() {
+        await this.writeBlock()
+    }
+
+    async read(dst: ArrayBuffer, size: number) {
+        if (size <= 0) return
+        if (this.pos + size > this.ino.size) throw new IDBFSError('read out of range')
+
+        const dstView = new DataView(dst)
+        const view = new DataView(this.buffer)
+        for (let i = 0; i < size; i++) {
+            const s = this.pos & (PAGE_SIZE - 1)
+            if (s === 0) {
+                // new page
+                await this.readBlock()
+            }
+            dstView.setUint8(i, view.getUint8(s))
+            this.pos++
+        }
+
+        if ((this.pos & (PAGE_SIZE - 1)) === 0) {
+            // new page
+            await this.readBlock()
+        }
+    }
+
+    async write(src: ArrayBuffer, size: number) {
+        if (size <= 0) return
+
+        const srcView = new DataView(src)
+        const view = new DataView(this.buffer)
+        for (let i = 0; i < size; i++) {
+            const s = this.pos & (PAGE_SIZE - 1)
+            if (s === 0 && this.pos > 0) {
+                // new page
+                // write last page to database
+                await this.writeBlock((this.pos >> PAGE_SHIFT) - 1)
+            }
+            view.setUint8(s, srcView.getUint8(i))
+            if (this.pos >= this.ino.size) {
+                // expand
+                this.ino.size = this.pos + 1
+                this.ino.partial = this.ino.size & (PAGE_SIZE - 1)
+            }
+            this.pos++
+        }
+
+        if ((this.pos & (PAGE_SIZE - 1)) === 0 && this.pos > 0) {
+            // new page
+            // write last page to database
+            await this.writeBlock((this.pos >> PAGE_SHIFT) - 1)
+        }
+    }
+
+    /**
+     * Create a new block in the database
+     * return: the id of block
+     */
+    private async allocBlock(): Promise<number> {
+        const db = this.ino.getDB()
+
+        await new Promise<void>((resolve, reject) => {
+            const request = db
+                .transaction('blocks', 'readwrite')
+                .objectStore('blocks')
+                .add({
+                    data: new ArrayBuffer(0),
+                })
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            request.onerror = (event) => reject(new IDBFSDBError(`cannot add to objectStore "blocks"`))
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            request.onsuccess = (event) => resolve()
+        })
+
+        // Get the new key
+        return await new Promise<number>((resolve, reject) => {
+            const request = db.transaction('blocks', 'readonly').objectStore('blocks').getAllKeys()
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            request.onerror = (event) => reject(new IDBFSDBError('getAllKeys() failed'))
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            request.onsuccess = (event) => {
+                const keys = request.result as number[]
+                if (keys.length <= 0) throw new IDBFSDBError('getAllKeys() got none')
+                resolve(Math.max(...keys))
+            }
+        })
+    }
+
+    async readBlock(index: number = this.pos >> PAGE_SHIFT) {
+        if (this.ino.blockIds === undefined) throw new IDBFSError('block id list missing')
+        if (this.ino.size === 0) return
+        if (index >= this.ino.blockIds.length) throw new IDBFSError('read out of range')
+        const db = this.ino.getDB()
+
+        const id = this.ino.blockIds[index]
+
+        const block = await new Promise<IDBFSBlockItem>((resolve, reject) => {
+            if (this.ino.blockIds === undefined) throw new IDBFSDBError('block id list missing')
+            const request = db.transaction('blocks', 'readwrite').objectStore('blocks').get(id)
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            request.onerror = (event) => reject(new IDBFSDBError(`cannot write to objectStore "blocks"`))
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            request.onsuccess = (event) => resolve(request.result)
+        })
+        const viewThis = new Uint8Array(this.buffer)
+        const viewThat = new Uint8Array(block.data)
+        viewThis.set(viewThat, 0)
+    }
+
+    async writeBlock(index: number = this.pos >> PAGE_SHIFT) {
+        if (this.ino.blockIds === undefined || this.ino.blockIds.length === 0) {
+            // fresh file, create the first block
+            const id = await this.allocBlock()
+            this.ino.blockIds = [id]
+        }
+
+        if (index > this.ino.blockIds.length) {
+            // skipped some blocks ?
+            throw new IDBFSError('block skipping occurred')
+        } else if (index === this.ino.blockIds.length) {
+            // create one new block
+            const id = await this.allocBlock()
+            this.ino.blockIds.push(id)
+        }
+
+        // write buffer data to database
+        const db = this.ino.getDB()
+
+        const size = index === this.ino.blockIds.length - 1 && this.ino.partial > 0 ? this.ino.partial : PAGE_SIZE
+
+        await new Promise<void>((resolve, reject) => {
+            if (this.ino.blockIds === undefined) throw new IDBFSDBError('block id list missing')
+            const request = db
+                .transaction('blocks', 'readwrite')
+                .objectStore('blocks')
+                .put({
+                    id: this.ino.blockIds[index],
+                    data: this.buffer.slice(0, size),
+                })
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            request.onerror = (event) => reject(new IDBFSDBError(`cannot write to objectStore "blocks"`))
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            request.onsuccess = (event) => resolve()
+        })
+
+        // update inode info to database
+        await this.ino.putToDB()
     }
 }
 
@@ -282,7 +471,6 @@ function getAsIDBFSInode(inode: Inode): IDBFSInode {
     return inode
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function getAsIDBFSFile(file: VFile): IDBFSFile {
     if (!(file instanceof IDBFSFile)) {
         throw new IDBFSTypeError()
@@ -295,10 +483,13 @@ function mkInode(type: InodeType): IDBFSInode {
     switch (type) {
         case InodeType.REG:
             inode = new IDBFSInode(InodeType.REG, idbFSFileOperations)
+            inode.blockIds = []
+            inode.entries = undefined
             break
         case InodeType.DIR:
             inode = new IDBFSInode(InodeType.DIR, idbFSDirFileOperations)
             inode.entries = new Map()
+            inode.blockIds = undefined
             break
         default:
             throw new IDBFSError('unsupported inode type: ' + type)
@@ -387,42 +578,83 @@ const idbFSInodeOperations: InodeOperations = {
 }
 
 const idbFSFileOperations: FileOperations = {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    llseek: function (file: VFile, offset: number, rel: SeekType): Promise<void> {
-        throw new IDBFSError('Function not implemented.')
+    llseek: async function (file: VFile, offset: number, rel: SeekType): Promise<void> {
+        const f = getAsIDBFSFile(file)
+        const inode = getAsIDBFSInode(f.inode)
+        if (!inode.blockIds) {
+            throw new IDBFSError('cannot seek negative inode')
+        }
+
+        await f.flush() // flush before seek
+
+        const limit = inode.size
+        let newPos = 0
+
+        switch (rel) {
+            case SeekType.SET:
+                newPos = offset
+                break
+            case SeekType.CUR:
+                newPos = f.pos + offset
+                break
+            case SeekType.END:
+                newPos = limit + offset
+                break
+            default:
+                throw new IDBFSError('invalid llseek type')
+        }
+
+        if (newPos < 0 || newPos >= limit) {
+            throw new IDBFSError('seek out of range')
+        }
+
+        f.pos = newPos
+
+        await f.readBlock() // prepare data
     },
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    read: function (file: VFile, dst: ArrayBuffer, size: number): Promise<void> {
-        throw new IDBFSError('Function not implemented.')
+    read: async function (file: VFile, dst: ArrayBuffer, size: number): Promise<void> {
+        const f = getAsIDBFSFile(file)
+        await f.read(dst, size)
     },
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    write: function (file: VFile, src: ArrayBuffer, size: number): Promise<void> {
-        throw new IDBFSError('Function not implemented.')
+    write: async function (file: VFile, src: ArrayBuffer, size: number): Promise<void> {
+        const f = getAsIDBFSFile(file)
+        await f.write(src, size)
     },
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     iterate: function (file: VFile, callback: IterateCallback): Promise<void> {
-        throw new IDBFSError('Function not implemented.')
+        throw new IDBFSError('cannot iterate regular file')
     },
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    open: function (file: VFile): Promise<VFile> {
-        throw new IDBFSError('Function not implemented.')
+    open: async function (file: VFile): Promise<VFile> {
+        const inode = getAsIDBFSInode(file.inode)
+        const f = new IDBFSFile(inode)
+        await f.readBlock() // do initial read
+        return f
     },
-    flush: async function (): Promise<void> {},
-    release: async function (): Promise<void> {},
+    flush: async function (file: VFile): Promise<void> {
+        const f = getAsIDBFSFile(file)
+        await f.flush()
+    },
+    release: async function (file: VFile): Promise<void> {
+        const f = getAsIDBFSFile(file)
+        await f.flush()
+    },
 }
 
 const idbFSDirFileOperations: FileOperations = {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     llseek: function (file: VFile, offset: number, rel: SeekType): Promise<void> {
-        throw new IDBFSError('Function not implemented.')
+        throw new IDBFSError('cannot seek dir')
     },
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     read: function (file: VFile, dst: ArrayBuffer, size: number): Promise<void> {
-        throw new IDBFSError('Function not implemented.')
+        throw new IDBFSError('cannot read dir')
     },
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     write: function (file: VFile, src: ArrayBuffer, size: number): Promise<void> {
-        throw new IDBFSError('Function not implemented.')
+        throw new IDBFSError('cannot write dir')
     },
     iterate: async function (file: VFile, callback: IterateCallback): Promise<void> {
         if (file.inode.type !== InodeType.DIR) {
@@ -442,8 +674,10 @@ const idbFSDirFileOperations: FileOperations = {
         await inode.updateInfo()
         return new IDBFSFile(inode)
     },
-    flush: async function (): Promise<void> {},
-    release: async function (): Promise<void> {},
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    flush: async function (file: VFile): Promise<void> {},
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    release: async function (file: VFile): Promise<void> {},
 }
 
 const idbFSSuperOperations: SuperOperations = {
@@ -481,8 +715,8 @@ class IDBFSMount extends Mount {
     }
 
     async doMount(): Promise<void> {
-        this.db = await new Promise((resolve, reject) => {
-            const request = this.indexedDB.open(this.dbName)
+        this.db = await new Promise<IDBDatabase>((resolve, reject) => {
+            const request = this.indexedDB.open(this.dbName, 2)
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             request.onerror = (event) => reject(new IDBFSDBError(`cannot open database "${this.dbName}"`))
 
@@ -490,26 +724,60 @@ class IDBFSMount extends Mount {
             request.onupgradeneeded = (event) => {
                 const db = request.result
 
-                const inodeStore = db.createObjectStore('inodes', {
-                    keyPath: 'ino',
-                    autoIncrement: true,
-                })
+                // Inode Store: since version 1
+                if (!db.objectStoreNames.contains('inodes')) {
+                    db.createObjectStore('inodes', {
+                        keyPath: 'ino',
+                        autoIncrement: true,
+                    })
+                }
 
-                // ROOT dir entry
-                inodeStore.add({
+                // Block Store: since version 2
+                if (!db.objectStoreNames.contains('blocks')) {
+                    db.createObjectStore('blocks', {
+                        keyPath: 'id',
+                        autoIncrement: true,
+                    })
+                }
+            }
+
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            request.onsuccess = (event) => {
+                //console.debug(`idbfs mounted with database "${this.dbName}"`)
+                resolve(request.result)
+            }
+        })
+
+        // Create the root inode if not exist
+        const v = await new Promise((resolve, reject) => {
+            if (!this.db) {
+                reject(new IDBFSNoDBError())
+                return
+            }
+            const request = this.db.transaction('inodes', 'readonly').objectStore('inodes').get(0)
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            request.onerror = (event) => reject(new IDBFSDBError('cannot get inodes'))
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            request.onsuccess = (event) => resolve(request.result)
+        })
+        if (v === undefined) {
+            await new Promise<void>((resolve, reject) => {
+                if (!this.db) {
+                    reject(new IDBFSNoDBError())
+                    return
+                }
+                const request = this.db.transaction('inodes', 'readwrite').objectStore('inodes').add({
                     ino: 0,
                     type: IDBFSInodeType.DIR,
                     links: 1,
                     data: new Map(),
                 })
-            }
-
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            request.onsuccess = (event) => {
-                console.debug(`idbfs mounted with database "${this.dbName}"`)
-                resolve(request.result)
-            }
-        })
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                request.onerror = (event) => reject(new IDBFSDBError('cannot add root inode'))
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                request.onsuccess = (event) => resolve()
+            })
+        }
 
         this.mntPoint.mount = this
         /** This relies on the statement above */

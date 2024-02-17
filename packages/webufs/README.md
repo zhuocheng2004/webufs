@@ -79,6 +79,16 @@ await ctx.chdir('idb')
 
 FS umounting not implemented yet.
 
+## About Versioning
+
+Change of major version number will introduce incompatibility to
+both users and FS backend and plugin developers.
+
+Change of minor version number keeps compatibility to users, 
+but may cause API incompatibility to the backend and plugin developers.
+
+Change of patch version number keeps compatibility to both users and developers.
+
 ## Hope (not implemented yet)
 
 We might also add shell-like support:

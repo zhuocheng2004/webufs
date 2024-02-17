@@ -1,0 +1,30 @@
+
+Version Information
+
+version 1:
+	objectStore "inodes":
+		{
+			ino: number [key, inode number]
+			type: number [type, 0=REG, 1=DIR, 2=LNK (symlink)]
+			links: number [reference count]
+			data?: 
+				  Map<string, number> [when type==DIR, name-inode map]
+		}
+
+version 2:
+	objectStore "inodes":
+		{
+			ino: number
+			type: number
+			links: number
+			data?: 
+				  Map<string, number> [when type==DIR]
+				| Array<number> [when type==REG, list of data block ids, each block 64K (1<<16)]
+			partial?: [when type==REG, size of the last data block]
+		}
+	
+	objectStore "blocks":
+		{
+			id: number [key, id of block]
+			data: ArrayBuffer [data content]
+		}

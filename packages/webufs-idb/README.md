@@ -1,8 +1,7 @@
 # Webufs-idb is an IndexedDB implementation of webufs.
 
-This is a plugin library for `@webufs/webufs`
+This is a plugin library for `@webufs/webufs` (also an example).
 
-Still under progress. Regular file operations not implemented yet.
 
 ## Usage
 
