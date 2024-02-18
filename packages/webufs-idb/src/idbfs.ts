@@ -106,8 +106,12 @@ class IDBFSInode extends Inode {
     /** size of the last block */
     partial: number = 0
 
-    constructor(type: InodeType, file_op?: FileOperations) {
+    /** whether we cannot write to the file */
+    readonly: boolean
+
+    constructor(type: InodeType, readonly: boolean, file_op?: FileOperations) {
         super(type, idbFSInodeOperations, file_op)
+        this.readonly = readonly
     }
 
     getData() {
@@ -310,17 +314,19 @@ class IDBFSFile extends VFile {
     buffer: ArrayBuffer = new ArrayBuffer(PAGE_SIZE)
 
     constructor(inode: IDBFSInode) {
-        super(inode)
+        super(inode, inode.readonly)
         this.ino = inode
     }
 
     async flush() {
-        await this.writeBlock()
+        if (!this.ino.readonly) await this.writeBlock()
     }
 
-    async read(dst: ArrayBuffer, size: number) {
-        if (size <= 0) return
-        if (this.pos + size > this.ino.size) throw new IDBFSError('read out of range')
+    async read(dst: ArrayBuffer, size: number): Promise<number> {
+        if (size <= 0) return 0
+        if (this.pos > this.ino.size) throw new IDBFSError('read out of range')
+
+        if (this.pos + size > this.ino.size) size = this.ino.size - this.pos
 
         const dstView = new DataView(dst)
         const view = new DataView(this.buffer)
@@ -338,9 +344,13 @@ class IDBFSFile extends VFile {
             // new page
             await this.readBlock()
         }
+
+        return size
     }
 
     async write(src: ArrayBuffer, size: number) {
+        if (this.ino.readonly) throw new IDBFSError('readonly')
+
         if (size <= 0) return
 
         const srcView = new DataView(src)
@@ -373,6 +383,8 @@ class IDBFSFile extends VFile {
      * return: the id of block
      */
     private async allocBlock(): Promise<number> {
+        if (this.ino.readonly) throw new IDBFSError('readonly')
+
         const db = this.ino.getDB()
 
         await new Promise<void>((resolve, reject) => {
@@ -412,7 +424,7 @@ class IDBFSFile extends VFile {
 
         const block = await new Promise<IDBFSBlockItem>((resolve, reject) => {
             if (this.ino.blockIds === undefined) throw new IDBFSDBError('block id list missing')
-            const request = db.transaction('blocks', 'readwrite').objectStore('blocks').get(id)
+            const request = db.transaction('blocks', 'readonly').objectStore('blocks').get(id)
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             request.onerror = (event) => reject(new IDBFSDBError(`cannot write to objectStore "blocks"`))
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -424,6 +436,8 @@ class IDBFSFile extends VFile {
     }
 
     async writeBlock(index: number = this.pos >> PAGE_SHIFT) {
+        if (this.ino.readonly) throw new IDBFSError('readonly')
+
         if (this.ino.blockIds === undefined || this.ino.blockIds.length === 0) {
             // fresh file, create the first block
             const id = await this.allocBlock()
@@ -482,12 +496,12 @@ function mkInode(type: InodeType): IDBFSInode {
     let inode: IDBFSInode
     switch (type) {
         case InodeType.REG:
-            inode = new IDBFSInode(InodeType.REG, idbFSFileOperations)
+            inode = new IDBFSInode(InodeType.REG, true, idbFSFileOperations)
             inode.blockIds = []
             inode.entries = undefined
             break
         case InodeType.DIR:
-            inode = new IDBFSInode(InodeType.DIR, idbFSDirFileOperations)
+            inode = new IDBFSInode(InodeType.DIR, true, idbFSDirFileOperations)
             inode.entries = new Map()
             inode.blockIds = undefined
             break
@@ -612,12 +626,10 @@ const idbFSFileOperations: FileOperations = {
 
         await f.readBlock() // prepare data
     },
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    read: async function (file: VFile, dst: ArrayBuffer, size: number): Promise<void> {
+    read: async function (file: VFile, dst: ArrayBuffer, size: number): Promise<number> {
         const f = getAsIDBFSFile(file)
-        await f.read(dst, size)
+        return await f.read(dst, size)
     },
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     write: async function (file: VFile, src: ArrayBuffer, size: number): Promise<void> {
         const f = getAsIDBFSFile(file)
         await f.write(src, size)
@@ -626,10 +638,10 @@ const idbFSFileOperations: FileOperations = {
     iterate: function (file: VFile, callback: IterateCallback): Promise<void> {
         throw new IDBFSError('cannot iterate regular file')
     },
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     open: async function (file: VFile): Promise<VFile> {
         const inode = getAsIDBFSInode(file.inode)
         const f = new IDBFSFile(inode)
+        inode.readonly = file.readonly
         await f.readBlock() // do initial read
         return f
     },
@@ -649,7 +661,7 @@ const idbFSDirFileOperations: FileOperations = {
         throw new IDBFSError('cannot seek dir')
     },
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    read: function (file: VFile, dst: ArrayBuffer, size: number): Promise<void> {
+    read: function (file: VFile, dst: ArrayBuffer, size: number): Promise<number> {
         throw new IDBFSError('cannot read dir')
     },
     // eslint-disable-next-line @typescript-eslint/no-unused-vars

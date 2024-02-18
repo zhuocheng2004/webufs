@@ -18,12 +18,17 @@ export type OpenFlag = {
     /**
      * only read, no writing (not implemented yet)
      */
-    rdonly?: boolean
+    readonly?: boolean
 
     /**
      * We are going to open a directory
      */
     directory?: boolean
+}
+
+export enum Status {
+    SUCCESS = 0, // Success
+    NOENT, // File does not exist
 }
 
 /**
@@ -112,9 +117,9 @@ export class FileDescriptor {
      * @param dst buffer to write to
      * @param size number of bytes to read (default to be the target buffer size)
      */
-    async read(dst: ArrayBuffer, size?: number) {
+    async read(dst: ArrayBuffer, size?: number): Promise<number> {
         if (!size) size = dst.byteLength
-        await this.readInternal(dst, size)
+        return await this.readInternal(dst, size)
     }
 
     /**
@@ -127,8 +132,8 @@ export class FileDescriptor {
         await this.writeInternal(src, size)
     }
 
-    private async readInternal(dst: ArrayBuffer, size: number) {
-        await this.op.read(this.file, dst, size)
+    private async readInternal(dst: ArrayBuffer, size: number): Promise<number> {
+        return await this.op.read(this.file, dst, size)
     }
 
     private async writeInternal(src: ArrayBuffer, size: number) {
@@ -354,6 +359,7 @@ export class Context {
             inode.dentry = dentry
 
             const file = await dentry.mount.op.mkVFile(inode)
+            file.readonly = flags.readonly ? true : false
 
             if (!flags.directory) {
                 if (!inode.file_op) {
@@ -369,6 +375,23 @@ export class Context {
         } catch (error) {
             throw Error(`cannot open "${path}": ${error}`)
         }
+    }
+
+    /**
+     * Check whether one can access the file
+     * @param path path of file
+     * @returns access status (SUCCESS=0, NOENT=1)
+     */
+    async access(path: string): Promise<Status> {
+        try {
+            const dentry = await this.lookup(path, LookupType.NORMAL)
+            if (!dentry.mount) throw Error('negative dentry')
+            if (!dentry.inode) throw Error()
+        } catch (e) {
+            return Status.NOENT
+        }
+
+        return Status.SUCCESS
     }
 
     /**

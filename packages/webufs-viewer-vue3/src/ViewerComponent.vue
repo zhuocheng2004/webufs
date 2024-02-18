@@ -1,6 +1,6 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
-import { createDefaultContext, Context, StatConst } from '@webufs/webufs'
+import { createDefaultContext, Context, StatConst, Status } from '@webufs/webufs'
 import { dentryTypeNames } from './helper'
 
 class Item {
@@ -28,6 +28,7 @@ export default defineComponent({
             selectedFiles: null as null | FileList,
             allSelect: false,
             uploading: false,
+            removing: false,
         }
     },
     async created() {
@@ -140,12 +141,10 @@ export default defineComponent({
             if (!this.context) return
             if (!this.selectedFiles) return
             for (let file of this.selectedFiles) {
-                try {
-                    await this.context.stat(file.name)
+                const status = await this.context.access(file.name)
+                if (status === Status.SUCCESS) {
                     this.$emit('error', new Error(`cannot upload file "${file.name}": already exists`))
                     continue
-                } catch (e) {
-                    /* empty */
                 }
                 const reader = new FileReader()
                 reader.onload = async (ev) => {
@@ -171,12 +170,16 @@ export default defineComponent({
                 if (!item.selected) continue
                 if ((item.mode & StatConst.IFMT) !== StatConst.IFDIR) {
                     try {
+                        this.removing = true
                         await this.context.unlink(item.name)
+                        this.removing = false
                     } catch (e) {
                         this.$emit('error', e)
+                        this.removing = false
                     }
                 } else {
                     this.$emit('error', new Error(`cannot unlink "${item.name}": is dir`))
+                    this.removing = false
                 }
             }
             await this.update()
@@ -187,13 +190,57 @@ export default defineComponent({
                 if (!item.selected) continue
                 if ((item.mode & StatConst.IFMT) === StatConst.IFDIR) {
                     try {
+                        this.removing = true
                         await this.context.rmdir(item.name)
+                        this.removing = false
                     } catch (e) {
                         this.$emit('error', e)
+                        this.removing = false
                     }
                 } else {
                     this.$emit('error', new Error(`cannot rmdir "${item.name}": not a dir`))
+                    this.removing = false
                 }
+            }
+            await this.update()
+        },
+        // note: there shouldn't be '..' in the path components
+        async removeRecursivelyInternal(path: string) {
+            if (!this.context) return
+
+            try {
+                const stat = await this.context.stat(path)
+                if ((stat.mode & StatConst.IFMT) === StatConst.IFREG) {
+                    await this.context.unlink(path)
+                    return
+                }
+
+                const fd = await this.context.open(path, { directory: true })
+                const infos = await fd.getdents()
+                await fd.close()
+                for (const info of infos) {
+                    const stat = await this.context.stat(path + '/' + info.name)
+                    if ((stat.mode & StatConst.IFMT) === StatConst.IFREG) {
+                        await this.context.unlink(path + '/' + info.name)
+                    } else if ((stat.mode & StatConst.IFMT) === StatConst.IFDIR) {
+                        await this.removeRecursivelyInternal(path + '/' + info.name)
+                    } else {
+                        throw Error(`don' know how to remove "${info.name}" in "${path}"`)
+                    }
+                }
+                await this.context.rmdir(path)
+            } catch (e) {
+                this.$emit('error', e)
+            }
+        },
+        async removeRecursively() {
+            if (!this.context) return
+            const pwd = this.context.getcwd()
+            for (const item of this.items) {
+                if (!item.selected) continue
+                this.removing = true
+                await this.removeRecursivelyInternal(pwd + '/' + item.name)
+                this.removing = false
             }
             await this.update()
         },
@@ -215,12 +262,13 @@ export default defineComponent({
             <span v-if="items.reduce((prev, curr) => prev || curr.selected, false) /* any one selected */">
                 <button style="margin-left: 0.8em" @click="unlinkSelected">unlink</button>
                 <button style="margin-left: 0.8em" @click="rmdirSelected">rmdir</button>
-                <!-- <button style="margin-left: 0.8em;">Delete Recursively</button> -->
+                <button style="margin-left: 0.8em" @click="removeRecursively">Remove Recursively</button>
+                <span v-if="removing" style="margin-left: 1em">Removing...</span>
             </span>
         </div>
         <div>
-            <table>
-                <thead>
+            <table style="margin: 1em; border: 1px solid gray">
+                <thead style="border-bottom: 1px solid #bbbbbb">
                     <tr>
                         <th width="3%">
                             <input
@@ -240,7 +288,7 @@ export default defineComponent({
                         <th width="15%">Last Update</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody style="padding: 0.4em">
                     <tr v-for="entry in items" :key="entry.index">
                         <td>
                             <input

@@ -29,11 +29,11 @@
         "prettier": "prettier --check src"
     },
     "devDependencies": {
-        "@rollup/plugin-terser": "^0.4.4"
-    },
-    "dependencies": {
+        "@rollup/plugin-terser": "^0.4.4",
         "@webufs/webufs": "^0.1.0",
         "@webufs/webufs-idb": "^0.1.0"
+    },
+    "dependencies": {
     },
     "gitHead": "b77fe5280c4bdfb9fa26f973ef1efa8cb0c9e259"
 }

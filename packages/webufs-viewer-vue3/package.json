@@ -38,7 +38,7 @@
         "@webufs/webufs": "^0.1.0"
     },
     "peerDependencies": {
-        "vue": "^3.4.15"
+        "vue": "^3.4.19"
     },
     "gitHead": "b77fe5280c4bdfb9fa26f973ef1efa8cb0c9e259"
 }

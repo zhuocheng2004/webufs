@@ -23,9 +23,11 @@ import { ResizableBuffer } from './ResizableBuffer'
 
 class MemFSInode extends Inode {
     data?: ResizableBuffer
+    readonly: boolean
 
-    constructor(type: InodeType, file_op?: FileOperations) {
+    constructor(type: InodeType, readonly: boolean, file_op?: FileOperations) {
         super(type, memFSInodeOperations, file_op)
+        this.readonly = readonly
     }
 
     updateSize(): boolean {
@@ -42,7 +44,7 @@ class MemFSFile extends VFile {
     pos: number = 0
 
     constructor(inode: MemFSInode) {
-        super(inode)
+        super(inode, inode.readonly)
     }
 }
 
@@ -85,9 +87,9 @@ function getAsMemFSFile(file: VFile): MemFSFile {
 function mkInode(type: InodeType): MemFSInode {
     switch (type) {
         case InodeType.REG:
-            return new MemFSInode(InodeType.REG, memFSFileOperations)
+            return new MemFSInode(InodeType.REG, true, memFSFileOperations)
         case InodeType.DIR:
-            return new MemFSInode(InodeType.DIR, memFSDirFileOperations)
+            return new MemFSInode(InodeType.DIR, true, memFSDirFileOperations)
         default:
             throw new MemFSError('unsupported inode type: ' + type)
     }
@@ -151,21 +153,21 @@ const memFSFileOperations: FileOperations = {
 
         f.pos = newPos
     },
-    read: async function (file: VFile, dst: ArrayBuffer, size: number): Promise<void> {
+    read: async function (file: VFile, dst: ArrayBuffer, size: number): Promise<number> {
         const f = getAsMemFSFile(file)
         const inode = getAsMemFSInode(f.inode)
         if (!inode.data) {
             throw new MemFSError('cannot read negative inode')
         }
-        inode.data.read(f.pos, size, dst)
-        f.pos += size
+        const cnt = inode.data.read(f.pos, size, dst)
+        f.pos += cnt
+        return cnt
     },
     write: async function (file: VFile, src: ArrayBuffer, size: number): Promise<void> {
         const f = getAsMemFSFile(file)
         const inode = getAsMemFSInode(f.inode)
-        if (!inode.data) {
-            throw new MemFSError('cannot write negative inode')
-        }
+        if (inode.readonly) throw new MemFSError('readonly')
+        if (!inode.data) throw new MemFSError('cannot write negative inode')
         inode.data.write(f.pos, size, src)
         f.pos += size
         inode.updateSize()
@@ -179,6 +181,7 @@ const memFSFileOperations: FileOperations = {
         if (!inode.data) {
             inode.data = new ResizableBuffer()
         }
+        inode.readonly = file.readonly
         return new MemFSFile(inode)
     },
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -193,7 +196,7 @@ const memFSDirFileOperations: FileOperations = {
         throw new MemFSError('cannot seek dir')
     },
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    read: function (file: VFile, dst: ArrayBuffer, size: number): Promise<void> {
+    read: function (file: VFile, dst: ArrayBuffer, size: number): Promise<number> {
         throw new MemFSError('cannot read dir')
     },
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -214,6 +217,7 @@ const memFSDirFileOperations: FileOperations = {
     },
     open: async function (file: VFile): Promise<VFile> {
         const inode = getAsMemFSInode(file.inode)
+        inode.readonly = file.readonly
         return new MemFSFile(inode)
     },
     // eslint-disable-next-line @typescript-eslint/no-unused-vars

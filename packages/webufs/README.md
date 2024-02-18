@@ -31,7 +31,13 @@ await ctx.rmdir('./a/')
 fd = await ctx.open('/', { directory: true })
 let fileInfos = await fd.getdents()
 for (let dirEntry of fileInfos) {
-    console.log(`name: ${dirEntry.name}, type: ${dirEntry.type}`)
+    console.log(`name: ${dirEntry.name}, type: ${dirEntry.type} `)
+}
+
+// check if file exists
+const status = await ctx.access('abc.png')
+if (status) {
+    console.error('File abc.png doesn\'t exist. ')
 }
 // ...
 
@@ -52,12 +58,29 @@ await fd.seek(2, SeekType.SET)          // offset +2 relative to file start
 // You can seek relative to SET, CUR or END.
 await fd.read(dst)
 // read data from file into dstView...
+// NOTE: read(size) will return the number of bytes that are actually read, ranging in the interval [0, size], and
+// when less than size, it means that we are near the end of the file.
 
 //  don't forget to close the file (this will also flush pending writing and release reference)
 await fd.close()
 
 // delete a file
 await ctx.unlink('a.txt')
+```
+
+Read file till the end:
+```ts
+fd = await ctx.open('a.txt', { readonly: true })
+let size = 0
+const buffer = new ArrayBuffer(0x100)
+while (true) {
+    const cnt = await fd.read(bufer)
+    size += cnt
+    if (cnt < 0x100) break
+}
+await fd.close()
+
+console.log(`File Size = ${size}`)
 ```
 
 ## Mounting Other FS

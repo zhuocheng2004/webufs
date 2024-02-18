@@ -2,7 +2,7 @@ import { describe, expect, test } from '@jest/globals'
 
 import { indexedDB } from 'fake-indexeddb'
 
-import { DirEntryType, createDefaultContext, StatConst, SeekType } from '../../webufs/build/index'
+import { DirEntryType, createDefaultContext, StatConst, SeekType, Status } from '../../webufs/build/index'
 import { IDBFS } from '../build/index'
 
 describe('Environment Test', () => {
@@ -102,7 +102,7 @@ describe('Directory Operation Test', () => {
 })
 
 describe('File Operation Test', () => {
-    /*test('seek/read/write', async () => {
+    test('seek/read/write', async () => {
         const ctx = await createDefaultContext()
         ctx.getVFS().registerFSType(IDBFS)
         await ctx.mkdir('idb')
@@ -162,7 +162,107 @@ describe('File Operation Test', () => {
         }
 
         await fd.close()
-    })*/
+    })
+
+    test('readonly', async () => {
+        const ctx = await createDefaultContext()
+        ctx.getVFS().registerFSType(IDBFS)
+        await ctx.mkdir('idb')
+        await ctx.mount('idbfs', '/idb', { indexedDB: indexedDB })
+        await ctx.chdir('idb')
+
+        await ctx.mkdir('readonly')
+        await ctx.chdir('readonly')
+
+        let fd = await ctx.open('a.txt', { create: true })
+        const src = new Uint8Array([0x30, 0x31, 0x32, 0x33])
+        await fd.write(src.buffer)
+        await fd.close()
+
+        fd = await ctx.open('a.txt', { readonly: true })
+
+        const dst = new ArrayBuffer(16)
+        const dstView = new DataView(dst)
+
+        await fd.read(dst)
+        expect(dstView.getUint8(0)).toBe(0x30)
+        expect(dstView.getUint8(1)).toBe(0x31)
+        expect(dstView.getUint8(2)).toBe(0x32)
+        expect(dstView.getUint8(3)).toBe(0x33)
+
+        await expect(() => fd.write(src)).rejects.toThrow()
+
+        await fd.close()
+    })
+
+    test('partial read', async () => {
+        const ctx = await createDefaultContext()
+        ctx.getVFS().registerFSType(IDBFS)
+        await ctx.mkdir('idb')
+        await ctx.mount('idbfs', '/idb', { indexedDB: indexedDB })
+        await ctx.chdir('idb')
+
+        await ctx.mkdir('partial')
+        await ctx.chdir('partial')
+
+        const fd = await ctx.open('a.txt', { create: true })
+
+        const src = new Uint8Array([0x30, 0x31, 0x32, 0x33])
+
+        await fd.write(src.buffer)
+        await fd.seek(-2, SeekType.CUR)
+        await fd.write(src.buffer)
+
+        const dst = new ArrayBuffer(16)
+        const dstView = new DataView(dst)
+
+        await fd.seek(0, SeekType.SET)
+        let cnt = await fd.read(dst)
+
+        expect(cnt).toBe(6)
+
+        expect(dstView.getUint8(0)).toBe(0x30)
+        expect(dstView.getUint8(1)).toBe(0x31)
+        expect(dstView.getUint8(2)).toBe(0x30)
+        expect(dstView.getUint8(3)).toBe(0x31)
+        expect(dstView.getUint8(4)).toBe(0x32)
+        expect(dstView.getUint8(5)).toBe(0x33)
+
+        cnt = await fd.read(dst)
+        expect(cnt).toBe(0)
+
+        await fd.close()
+    })
+
+    test('read unknown size', async () => {
+        const ctx = await createDefaultContext()
+        ctx.getVFS().registerFSType(IDBFS)
+        await ctx.mkdir('idb')
+        await ctx.mount('idbfs', '/idb', { indexedDB: indexedDB })
+        await ctx.chdir('idb')
+
+        await ctx.mkdir('toEnd')
+        await ctx.chdir('toEnd')
+
+        let fd = await ctx.open('a.txt', { create: true })
+        const src = new Uint8Array([0x30, 0x31, 0x32, 0x33])
+        const N = 0x1234
+        for (let i = 0; i < N; i++) await fd.write(src.buffer)
+        await fd.close()
+
+        fd = await ctx.open('a.txt', { readonly: true })
+        let size = 0
+        const A = 123
+        const dst = new ArrayBuffer(A)
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+            const cnt = await fd.read(dst)
+            size += cnt
+            if (cnt < A) break
+        }
+        expect(size).toBe(N * 4)
+        await fd.close()
+    })
 
     test('large data read/write', async () => {
         const ctx = await createDefaultContext()
@@ -238,6 +338,13 @@ describe('File Operation Test', () => {
         stat = await ctx.stat('dir/')
         expect(stat.size).toBe(0)
         expect(stat.mode & StatConst.IFMT).toBe(StatConst.IFDIR)
+
+        let status = await ctx.access('b.txt')
+        expect(status).toBe(Status.SUCCESS)
+        status = await ctx.access('dir')
+        expect(status).toBe(Status.SUCCESS)
+        status = await ctx.access('d.png')
+        expect(status).toBe(Status.NOENT)
     })
 
     test('link/unlink', async () => {

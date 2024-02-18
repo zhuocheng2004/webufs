@@ -48,10 +48,11 @@ export class ResizableBuffer {
         return array
     }
 
-    read(offset: number, size: number, dest: ArrayBuffer) {
-        if (offset + size > this.limit) {
-            throw Error('reading out of range')
-        }
+    read(offset: number, size: number, dest: ArrayBuffer): number {
+        if (size <= 0) return 0
+        if (offset > this.limit) throw Error('reading out of range')
+
+        if (offset + size > this.limit) size = this.limit - offset
 
         let index = offset >> ResizableBuffer.PAGE_SHIFT
         let rel = offset & ResizableBuffer.PAGE_MASK
@@ -71,6 +72,8 @@ export class ResizableBuffer {
 
             rel++
         }
+
+        return size
     }
 
     write(offset: number, size: number, src: ArrayBuffer) {

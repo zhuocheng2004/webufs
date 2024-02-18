@@ -12,14 +12,14 @@ describe('ResizableBuffer Test', () => {
         const dst = new ArrayBuffer(16)
         const dstView = new DataView(dst)
 
-        expect(() => buffer.read(0, 2, dst)).toThrow()
+        expect(buffer.read(0, 2, dst)).toBe(0)
 
         const src = new Uint8Array([0x30, 0x31, 0x32, 0x33])
 
         buffer.write(0, 4, src.buffer)
         buffer.write(2, 4, src.buffer)
 
-        expect(() => buffer.read(0, 8, dst)).toThrow()
+        expect(buffer.read(0, 8, dst)).toBe(6)
 
         buffer.read(0, 6, dst)
         expect(dstView.getUint8(0)).toBe(0x30)
@@ -30,6 +30,8 @@ describe('ResizableBuffer Test', () => {
         expect(dstView.getUint8(5)).toBe(0x33)
 
         expect(buffer.limit).toBe(6)
+
+        expect(buffer.read(6, 2, dst)).toBe(0)
     })
 
     test('larger data', () => {

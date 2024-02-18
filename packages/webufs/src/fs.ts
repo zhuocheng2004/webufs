@@ -127,9 +127,11 @@ export class Inode {
 
 export class VFile {
     inode: Inode
+    readonly: boolean
 
-    constructor(inode: Inode) {
+    constructor(inode: Inode, readonly: boolean) {
         this.inode = inode
+        this.readonly = readonly
     }
 }
 
@@ -179,7 +181,9 @@ export class KStat {
  */
 export interface FileOperations {
     llseek: (file: VFile, offset: number, rel: SeekType) => Promise<void>
-    read: (file: VFile, dst: ArrayBuffer, size: number) => Promise<void>
+
+    /** return the number of bytes that are actually read */
+    read: (file: VFile, dst: ArrayBuffer, size: number) => Promise<number>
     write: (file: VFile, src: ArrayBuffer, size: number) => Promise<void>
     iterate: (file: VFile, callback: IterateCallback) => Promise<void>
     open: (file: VFile) => Promise<VFile>
