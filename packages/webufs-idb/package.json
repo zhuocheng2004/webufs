@@ -1,6 +1,6 @@
 {
     "name": "@webufs/webufs-idb",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "an IndexedDB implementation of the webufs API",
     "keywords": [
         "indexeddb",
@@ -35,7 +35,7 @@
         "fake-indexeddb": "^5.0.2"
     },
     "dependencies": {
-        "@webufs/webufs": "^0.1.0"
+        "@webufs/webufs": "^0.1.1"
     },
     "gitHead": "b77fe5280c4bdfb9fa26f973ef1efa8cb0c9e259"
 }
