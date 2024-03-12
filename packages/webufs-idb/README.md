@@ -27,7 +27,7 @@ import { indexedDB } from 'fake-indexeddb'
 await ctx.mount('idbfs', '/idb', {
 	/**
 	 * type: IDBFactory
-	 * defualt: window.indexedDB
+	 * defualt: indexedDB (in the corresponding global context)
 	 * 
 	 * You can choose any other custom indexedDB implementation
 	 * instead of the default one.
@@ -41,7 +41,7 @@ await ctx.mount('idbfs', '/idb', {
 	 * the name of the IndexedDB database that our filesystem uses
 	 * as the storage
 	 * 
-	 * In this way we can have multiple independent filesystems 
+	 * In this way we can have multiple independent idbfs storages 
 	 * at the same time.
 	 */
 	dbName: 'hello-webufs-idb'

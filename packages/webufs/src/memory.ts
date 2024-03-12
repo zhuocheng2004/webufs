@@ -14,6 +14,7 @@ import {
     InodeType,
     IterateCallback,
     Mount,
+    OpenFlag,
     SeekType,
     SuperOperations,
     VFile,
@@ -176,11 +177,13 @@ const memFSFileOperations: FileOperations = {
     iterate: function (file: VFile, callback: IterateCallback): Promise<void> {
         throw new MemFSError('cannot iterate non-directory file')
     },
-    open: async function (file: VFile): Promise<VFile> {
+    open: async function (file: VFile, flags: OpenFlag): Promise<VFile> {
+        if (flags.directory) throw new MemFSError('unexpected dir open flag')
         const inode = getAsMemFSInode(file.inode)
-        if (!inode.data) {
+        if (!inode.data || flags.trunc) {
             inode.data = new ResizableBuffer()
         }
+        inode.updateSize()
         inode.readonly = file.readonly
         return new MemFSFile(inode)
     },
@@ -215,9 +218,10 @@ const memFSDirFileOperations: FileOperations = {
             await callback(subdir.name)
         }
     },
-    open: async function (file: VFile): Promise<VFile> {
+    open: async function (file: VFile, flags: OpenFlag): Promise<VFile> {
+        if (!flags.directory) throw new MemFSError('no dir open flag')
         const inode = getAsMemFSInode(file.inode)
-        inode.readonly = file.readonly
+        inode.readonly = flags.readonly ? true : false
         return new MemFSFile(inode)
     },
     // eslint-disable-next-line @typescript-eslint/no-unused-vars

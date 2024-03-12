@@ -7,6 +7,7 @@ import {
     InodeType,
     IterateCallback,
     Mount,
+    OpenFlag,
     SeekType,
     SuperOperations,
     VFile,
@@ -255,10 +256,7 @@ class IDBFSInode extends Inode {
         await this.updateInfo()
     }
 
-    /**
-     * remove information from database
-     */
-    async drop() {
+    async clearContent() {
         const db = this.getDB()
 
         // if regular file, delete associated blocks from database
@@ -272,7 +270,20 @@ class IDBFSInode extends Inode {
                     request.onsuccess = (event) => resolve()
                 })
             }
+            this.blockIds = undefined
+            this.partial = 0
+            await this.putToDB()
         }
+    }
+
+    /**
+     * remove information from database
+     */
+    async drop() {
+        const db = this.getDB()
+
+        // clear data
+        await this.clearContent()
 
         // remove the inode object from database
         await new Promise<void>((resolve, reject) => {
@@ -638,10 +649,13 @@ const idbFSFileOperations: FileOperations = {
     iterate: function (file: VFile, callback: IterateCallback): Promise<void> {
         throw new IDBFSError('cannot iterate regular file')
     },
-    open: async function (file: VFile): Promise<VFile> {
+    open: async function (file: VFile, flags: OpenFlag): Promise<VFile> {
+        if (flags.directory) throw new IDBFSError('unexpected dir open flag')
         const inode = getAsIDBFSInode(file.inode)
+        if (flags.trunc) await inode.clearContent()
+        await inode.updateInfo()
         const f = new IDBFSFile(inode)
-        inode.readonly = file.readonly
+        inode.readonly = flags.readonly ? true : false
         await f.readBlock() // do initial read
         return f
     },
@@ -681,9 +695,11 @@ const idbFSDirFileOperations: FileOperations = {
             await callback(subdir.name)
         }
     },
-    open: async function (file: VFile): Promise<VFile> {
+    open: async function (file: VFile, flags: OpenFlag): Promise<VFile> {
+        if (!flags.directory) throw new IDBFSError('no dir open flag')
         const inode = getAsIDBFSInode(file.inode)
         await inode.updateInfo()
+        inode.readonly = flags.readonly ? true : false
         return new IDBFSFile(inode)
     },
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -819,9 +835,9 @@ export class IDBFSType extends FileSystemType {
     }
 
     async mount(dentry: Dentry, options?: MountFlag): Promise<Mount> {
-        const indexedDB = options && options.indexedDB ? options.indexedDB : window.indexedDB
+        const idb = options && options.indexedDB ? options.indexedDB : indexedDB
         const dbName = options && options.dbName ? options.dbName : 'webufs-idb'
-        const mount = new IDBFSMount(indexedDB, dentry, dbName)
+        const mount = new IDBFSMount(idb, dentry, dbName)
         await mount.doMount()
         return mount
     }

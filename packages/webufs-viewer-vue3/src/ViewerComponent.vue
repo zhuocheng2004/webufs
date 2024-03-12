@@ -119,7 +119,7 @@ export default defineComponent({
                 const element = document.createElement('a')
                 element.href = URL.createObjectURL(blob)
                 element.download = name
-                element.click()
+                if (confirm(`Download "${name}" ? \n[${element.href}]`)) element.click()
             } catch (e) {
                 this.$emit('error', e)
             }

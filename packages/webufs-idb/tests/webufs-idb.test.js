@@ -195,6 +195,43 @@ describe('File Operation Test', () => {
         await fd.close()
     })
 
+    test('trunc', async () => {
+        const ctx = await createDefaultContext()
+        ctx.getVFS().registerFSType(IDBFS)
+        await ctx.mkdir('idb')
+        await ctx.mount('idbfs', '/idb', { indexedDB: indexedDB })
+        await ctx.chdir('idb')
+
+        await ctx.mkdir('trunc')
+        await ctx.chdir('trunc')
+
+        let fd = await ctx.open('a.txt', { create: true })
+        const src = new Uint8Array([0x30, 0x31, 0x32, 0x33])
+        await fd.write(src.buffer)
+        await fd.close()
+
+        let stat = await ctx.stat('a.txt')
+        expect(stat.size).toBe(4)
+
+        const src2 = new Uint8Array([0x40, 0x41])
+
+        // normal write
+        fd = await ctx.open('a.txt')
+        await fd.write(src2.buffer)
+        await fd.close()
+
+        stat = await ctx.stat('a.txt')
+        expect(stat.size).toBe(4)
+
+        // trunc write
+        fd = await ctx.open('a.txt', { trunc: true })
+        await fd.write(src2.buffer)
+        await fd.close()
+
+        stat = await ctx.stat('a.txt')
+        expect(stat.size).toBe(2)
+    })
+
     test('partial read', async () => {
         const ctx = await createDefaultContext()
         ctx.getVFS().registerFSType(IDBFS)

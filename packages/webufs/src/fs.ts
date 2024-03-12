@@ -177,6 +177,42 @@ export class KStat {
 }
 
 /**
+ * Flag object when openning a file/dir
+ */
+export type OpenFlag = {
+    /**
+     * Create regular file if not exist.
+     */
+    create?: boolean
+
+    /**
+     * Used together with CREATE. Throw error when file exists
+     */
+    excl?: boolean
+
+    /**
+     * only read, no writing
+     */
+    readonly?: boolean
+
+    /**
+     * clear original file content
+     */
+    trunc?: boolean
+
+    /**
+     * Whenever write, always append at the end.
+     * Reading is normal.
+     */
+    append?: boolean
+
+    /**
+     * We are going to open a directory
+     */
+    directory?: boolean
+}
+
+/**
  * Operations on VFile object
  */
 export interface FileOperations {
@@ -186,7 +222,7 @@ export interface FileOperations {
     read: (file: VFile, dst: ArrayBuffer, size: number) => Promise<number>
     write: (file: VFile, src: ArrayBuffer, size: number) => Promise<void>
     iterate: (file: VFile, callback: IterateCallback) => Promise<void>
-    open: (file: VFile) => Promise<VFile>
+    open: (file: VFile, flags: OpenFlag) => Promise<VFile>
     flush: (file: VFile) => Promise<void>
 
     /** called when file is closed */

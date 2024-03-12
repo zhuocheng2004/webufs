@@ -1,30 +1,5 @@
-import { Dentry, FileOperations, Inode, InodeType, SeekType, StatConst, VFile } from './fs'
+import { Dentry, FileOperations, Inode, InodeType, OpenFlag, SeekType, StatConst, VFile } from './fs'
 import { LookupType, VFS } from './VFS'
-
-/**
- * Flag object when openning a file/dir
- */
-export type OpenFlag = {
-    /**
-     * Create regular file if not exist.
-     */
-    create?: boolean
-
-    /**
-     * Used together with CREATE. Throw error when file exists
-     */
-    excl?: boolean
-
-    /**
-     * only read, no writing (not implemented yet)
-     */
-    readonly?: boolean
-
-    /**
-     * We are going to open a directory
-     */
-    directory?: boolean
-}
 
 export enum Status {
     SUCCESS = 0, // Success
@@ -129,6 +104,7 @@ export class FileDescriptor {
      */
     async write(src: ArrayBuffer, size?: number) {
         if (!size) size = src.byteLength
+        if (this.file.readonly) throw Error('readonly')
         await this.writeInternal(src, size)
     }
 
@@ -361,14 +337,11 @@ export class Context {
             const file = await dentry.mount.op.mkVFile(inode)
             file.readonly = flags.readonly ? true : false
 
-            if (!flags.directory) {
-                if (!inode.file_op) {
-                    throw Error('file operations not available')
-                }
-
-                await inode.file_op.open(file)
+            if (!inode.file_op) {
+                throw Error('file operations not available')
             }
 
+            await inode.file_op.open(file, flags)
             await inode.get()
 
             return new FileDescriptor(file)

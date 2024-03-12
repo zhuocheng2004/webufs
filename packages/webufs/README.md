@@ -83,6 +83,14 @@ await fd.close()
 console.log(`File Size = ${size}`)
 ```
 
+Discard original content (with size set back to zero) and re-write:
+```ts
+fd = await ctx.open('a.txt', { trunc: true })
+const src = new Uint8Array([0x30, 0x31, 0x32, 0x33])
+await fd.write(src.buffer)
+await fd.close()
+```
+
 ## Mounting Other FS
 
 We take `@webufs/webufs-idb`, a filesystem implementation of IndexedDB backend, for example:
