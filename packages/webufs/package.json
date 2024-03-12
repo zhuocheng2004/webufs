@@ -1,6 +1,6 @@
 {
     "name": "@webufs/webufs",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "description": "webufs: a Linux-style web filesystem framework",
     "keywords": [
         "filesystem",
